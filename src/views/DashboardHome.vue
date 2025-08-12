@@ -1,4 +1,4 @@
-<template>
+<template> 
   <div class="dashboard-home">
     <!-- Kotak statistik -->
     <div class="row mb-4">
@@ -25,9 +25,11 @@
     <!-- Gambar peta dengan tombol di tengah -->
     <div class="map-container position-relative text-center">
       <img src="@/assets/image/peta.png" alt="Peta" class="img-fluid rounded shadow" />
-      <button class="map-button btn btn-outline-light position-absolute top-50 start-50 translate-middle">
-        Click Here ⤵
-      </button>
+      <router-link to="/peta">
+        <button class="map-button btn btn-outline-light position-absolute top-50 start-50 translate-middle">
+          Click Here ⤵
+        </button>
+      </router-link>
     </div>
   </div>
 </template>
@@ -36,9 +38,9 @@
 export default {
   data() {
     return {
-      jumlahPohon: 1280,
-      luasLahan: 45.3,
-      jumlahPekerja: 23
+      jumlahPohon: 70.127,
+      luasLahan: 8334589.1,
+      jumlahPekerja: 120
     }
   }
 }
@@ -55,6 +57,17 @@ export default {
 .map-container {
   position: relative;
   margin-top: 30px;
+  text-align: center;
+}
+
+.map-container img {
+  max-width: 100%;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .map-button {

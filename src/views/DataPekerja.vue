@@ -1,21 +1,23 @@
 <template>
-  <div class="data-pengguna-page">
+  <div class="data-pekerja-page">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2>Manajemen Pengguna</h2>
+      <h2>Data Pekerja</h2>
       <div>
         <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addModal">
-          + Tambah Pengguna
+          + Add Data
         </button>
         <button class="btn btn-primary" @click="exportCSV">Export CSV</button>
       </div>
     </div>
 
+    <!-- TABEL -->
     <vue-good-table
         :columns="columns"
         :rows="users"
         :search-options="{ enabled: true }"
         :pagination-options="{ enabled: true, perPage: 5 }"
     >
+
       <template #table-row="props">
         <span v-if="props.column.field === 'aksi'">
           <button class="btn btn-sm btn-outline-secondary me-1" @click="editUser(props.row)">✎ Edit</button>
@@ -33,26 +35,32 @@
         <div class="modal-content">
           <form @submit.prevent="submitForm">
             <div class="modal-header">
-              <h5 class="modal-title">Tambah Pengguna</h5>
+              <h5 class="modal-title">Tambah Data Pekerja</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <input v-model="form.name" type="text" class="form-control" placeholder="Nama" required />
+                  <input v-model="form.nama" type="text" class="form-control" placeholder="Nama" required />
                 </div>
-                <div class="col-md-6 mb-3">
-                  <input v-model="form.email" type="email" class="form-control" placeholder="Email" required />
+                <div class="col-md-3 mb-3">
+                  <input v-model.number="form.umur" type="number" class="form-control" placeholder="Umur" required />
                 </div>
-                <div class="col-md-6 mb-3">
-                  <select v-model="form.role" class="form-control" required>
-                    <option disabled value="">Pilih Role</option>
-                    <option value="admin">Admin</option>
-                    <option value="staff">Staff</option>
+                <div class="col-md-3 mb-3">
+                  <select v-model="form.jenis_kelamin" class="form-control" required>
+                    <option disabled value="">Jenis Kelamin</option>
+                    <option>Laki-laki</option>
+                    <option>Perempuan</option>
                   </select>
                 </div>
-                <div class="col-md-6 mb-3">
-                  <input v-model="form.password" type="password" class="form-control" placeholder="Password" required />
+                <div class="col-md-4 mb-3">
+                  <input v-model.number="form.lama_kerja" type="number" class="form-control" placeholder="Lama Kerja (thn)" required />
+                </div>
+                <div class="col-md-4 mb-3">
+                  <input v-model="form.kontak" type="text" class="form-control" placeholder="Kontak" required />
+                </div>
+                <div class="col-md-4 mb-3">
+                  <input v-model="form.pekerjaan" type="text" class="form-control" placeholder="Pekerjaan" required />
                 </div>
               </div>
             </div>
@@ -71,26 +79,32 @@
         <div class="modal-content">
           <form @submit.prevent="submitEdit">
             <div class="modal-header">
-              <h5 class="modal-title">Edit Pengguna</h5>
+              <h5 class="modal-title">Edit Data Pekerja</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <input v-model="editForm.name" type="text" class="form-control" placeholder="Nama" required />
+                  <input v-model="editForm.nama" type="text" class="form-control" placeholder="Nama" required />
                 </div>
-                <div class="col-md-6 mb-3">
-                  <input v-model="editForm.email" type="email" class="form-control" placeholder="Email" required />
+                <div class="col-md-3 mb-3">
+                  <input v-model.number="editForm.umur" type="number" class="form-control" placeholder="Umur" required />
                 </div>
-                <div class="col-md-6 mb-3">
-                  <select v-model="editForm.role" class="form-control" required>
-                    <option disabled value="">Pilih Role</option>
-                    <option value="admin">admin</option>
-                    <option value="staff">staff</option>
+                <div class="col-md-3 mb-3">
+                  <select v-model="editForm.jenis_kelamin" class="form-control" required>
+                    <option disabled value="">Jenis Kelamin</option>
+                    <option>Laki-laki</option>
+                    <option>Perempuan</option>
                   </select>
                 </div>
-                <div class="col-md-6 mb-3">
-                  <input v-model="editForm.password" type="password" class="form-control" placeholder="Password"/>
+                <div class="col-md-4 mb-3">
+                  <input v-model.number="editForm.lama_kerja" type="number" class="form-control" placeholder="Lama Kerja (thn)" required />
+                </div>
+                <div class="col-md-4 mb-3">
+                  <input v-model="editForm.kontak" type="text" class="form-control" placeholder="Kontak" required />
+                </div>
+                <div class="col-md-4 mb-3">
+                  <input v-model="editForm.pekerjaan" type="text" class="form-control" placeholder="Pekerjaan" required />
                 </div>
               </div>
             </div>
@@ -111,7 +125,7 @@ import { VueGoodTable } from 'vue-good-table-next'
 import 'vue-good-table-next/dist/vue-good-table-next.css'
 
 export default {
-  name: 'DataPengguna',
+  name: 'DataPekerja',
   components: {
     VueGoodTable
   },
@@ -119,24 +133,31 @@ export default {
     return {
       users: [],
       columns: [
-        { label: 'ID', field: 'id', sortable: true },
-        { label: 'Nama', field: 'name', sortable: true },
-        { label: 'Email', field: 'email', sortable: true },
-        { label: 'Role', field: 'role', sortable: true },
+        { label: 'ID', field: 'id_pekerja', sortable: true },
+        { label: 'Nama', field: 'nama', sortable: true },
+        { label: 'Umur', field: 'umur', sortable: true },
+        { label: 'Jenis Kelamin', field: 'jenis_kelamin', sortable: false },
+        { label: 'Lama Kerja', field: 'lama_kerja', sortable: true },
+        { label: 'Kontak', field: 'kontak' },
+        { label: 'Pekerjaan', field: 'pekerjaan' },
         { label: 'Aksi', field: 'aksi' }
       ],
       form: {
-        name: '',
-        email: '',
-        password: '',
-        role: ''
+        nama: '',
+        umur: '',
+        jenis_kelamin: '',
+        lama_kerja: '',
+        kontak: '',
+        pekerjaan: ''
       },
       editForm: {
-        id: null,
-        name: '',
-        email: '',
-        role: '',
-        password: ''
+        id_pekerja: null,
+        nama: '',
+        umur: '',
+        jenis_kelamin: '',
+        lama_kerja: '',
+        kontak: '',
+        pekerjaan: ''
       }
     }
   },
@@ -146,7 +167,7 @@ export default {
   methods: {
     async fetchUsers() {
       try {
-        const response = await axios.get('/admin/users')
+        const response = await axios.get('/pekerja')
         this.users = response.data
       } catch (error) {
         console.error('Gagal ambil data:', error)
@@ -154,7 +175,7 @@ export default {
     },
     async submitForm() {
       try {
-        await axios.post('/admin/users', this.form)
+        await axios.post('/pekerja', this.form)
         const modalEl = document.getElementById('addModal')
         let modal = window.bootstrap.Modal.getInstance(modalEl)
         if (!modal) modal = new window.bootstrap.Modal(modalEl)
@@ -169,10 +190,12 @@ export default {
     },
     resetForm() {
       this.form = {
-        name: '',
-        email: '',
-        password: '',
-        role: ''
+        nama: '',
+        umur: '',
+        jenis_kelamin: '',
+        lama_kerja: '',
+        kontak: '',
+        pekerjaan: ''
       }
     },
     editUser(user) {
@@ -184,7 +207,7 @@ export default {
     },
     async submitEdit() {
       try {
-        await axios.put(`/admin/users/${this.editForm.id}`, this.editForm)
+        await axios.put(`/pekerja/${this.editForm.id_pekerja}`, this.editForm)
         const modalEl = document.getElementById('editModal')
         let modal = window.bootstrap.Modal.getInstance(modalEl)
         if (!modal) modal = new window.bootstrap.Modal(modalEl)
@@ -197,10 +220,10 @@ export default {
       }
     },
     async deleteUser(user) {
-      const confirmDelete = confirm(`Yakin ingin menghapus pengguna ID ${user.id}?`)
+      const confirmDelete = confirm(`Yakin ingin menghapus pekerja ID ${user.id_pekerja}?`)
       if (confirmDelete) {
         try {
-          await axios.delete(`/admin/users/${user.id}`)
+          await axios.delete(`/pekerja/${user.id_pekerja}`)
           await this.fetchUsers()
           alert('Berhasil dihapus')
         } catch (error) {
@@ -210,15 +233,15 @@ export default {
       }
     },
     exportCSV() {
-      let csv = 'ID,Nama,Email,Role\n'
+      let csv = 'ID,Nama,Umur,Jenis Kelamin,Lama Kerja,Kontak,Pekerjaan\n'
       this.users.forEach(u => {
-        csv += `${u.id},${u.name},${u.email},${u.role}\n`
+        csv += `${u.id_pekerja},${u.nama},${u.umur},${u.jenis_kelamin},${u.lama_kerja},${u.kontak},${u.pekerjaan}\n`
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', 'data_pengguna.csv')
+      link.setAttribute('download', 'data_pekerja.csv')
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -274,7 +297,7 @@ th.sorting-desc .vgt-sort-icon::before {
   margin-top: 10px !important;
 }
 
-.data-pengguna-page {
+.data-pekerja-page {
   background-color: #fff;
   padding: 20px;
   border-radius: 10px;

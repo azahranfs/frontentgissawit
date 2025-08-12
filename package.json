@@ -12,11 +12,22 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
+    "@vue-leaflet/vue-leaflet": "^0.10.1",
+    "axios": "^1.10.0",
     "bootstrap": "^5.3.7",
+    "leaflet": "^1.9.4",
+    "leaflet.control.layers.tree": "^1.1.1",
     "pinia": "^3.0.3",
+    "proj4": "^2.19.7",
+    "proj4leaflet": "^1.0.2",
     "simple-datatables": "^10.0.0",
+    "terraformer-wkt-parser": "^1.2.1",
     "vue": "^3.5.17",
-    "vue-router": "^4.5.1"
+    "vue-good-table": "^2.21.11",
+    "vue-good-table-next": "^0.2.2",
+    "vue-multiselect": "^3.2.0",
+    "vue-router": "^4.5.1",
+    "wellknown": "^0.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

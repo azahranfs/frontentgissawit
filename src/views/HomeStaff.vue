@@ -20,7 +20,7 @@
             <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
           </ul>
           <div class="d-flex justify-content-center mt-3 mt-lg-0">
-            <button class="btn btn-outline-light rounded-pill">LOGOUT →</button>
+            <button class="btn btn-outline-light rounded-pill" @click="logout">LOGOUT →</button>
           </div>
         </div>
       </div>
@@ -105,12 +105,26 @@
 import sawit1 from '@/assets/image/sawit1.png'
 import sawit2 from '@/assets/image/sawit2.jpg'
 import sawit3 from '@/assets/image/sawit3.jpg'
+import axios from '@/axios' // pastikan path ini sesuai
 
 export default {
   name: 'HomeStaff',
   data() {
     return {
       slides: [sawit1, sawit2, sawit3]
+    }
+  },
+  methods: {
+    async logout() {
+      try {
+        await axios.post('/logout')
+        localStorage.clear()
+        alert('Logout berhasil!')
+        this.$router.push('/login')
+      } catch (error) {
+        console.error('Gagal logout:', error)
+        alert('Gagal logout')
+      }
     }
   }
 }
