@@ -1,20 +1,28 @@
 <template>
-  <l-geo-json
-    v-if="blokGeojson"
-    layer-type="overlay"
-    name="Blok Kebun"
-    :geojson="blokGeojson"
-    :options-style="styleBlok"
-    @add="onLayerAdd"
-  />
+  <l-layer-group layer-type="overlay" name="Blok Kebun">
+    <LGeoJson
+      v-if="blokGeojson"
+      :geojson="blokGeojson"
+      :options-style="styleBlok"
+      @ready="onGeoJsonReady"
+    />
+  </l-layer-group>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
-import { LGeoJson } from "@vue-leaflet/vue-leaflet"
+import { ref, watch, nextTick } from "vue"
+import { LGeoJson, LLayerGroup } from "@vue-leaflet/vue-leaflet"
 import axios from "@/axios"
 
+const props = defineProps({
+  selectedDate: {
+    type: String,
+    required: true
+  }
+})
+
 const blokGeojson = ref(null)
+let geojsonLayerRef = null
 
 const formatTanggal = (tanggal) => {
   if (!tanggal) return null
@@ -26,10 +34,10 @@ const formatTanggal = (tanggal) => {
 }
 
 const getWarnaDariUmur = (umur) => {
-  if (umur === null || umur === undefined) return "#CCCCCC" // default abu
-  if (umur < 4) return "#CBE2B5"            // Hijau muda - Muda
-  if (umur <= 18) return "#86AB89"          // Hijau - Produktif
-  return "#A28B55"                          // Coklat - Tua
+  if (umur === null || umur === undefined) return "#CCCCCC"
+  if (umur < 4) return "#CBE2B5"
+  if (umur <= 18) return "#86AB89"
+  return "#A28B55"
 }
 
 const styleBlok = (feature) => {
@@ -44,20 +52,28 @@ const styleBlok = (feature) => {
   }
 }
 
-onMounted(async () => {
+const fetchBlok = async (tanggal) => {
   try {
-    const response = await axios.get("/blok")
-    const data = response.data
+    const response = await axios.get(`/blok/by-date?tanggal=${tanggal}`)
+    const data = Array.isArray(response.data) ? response.data : [response.data]
 
     blokGeojson.value = {
       type: "FeatureCollection",
-      features: (Array.isArray(data) ? data : [data])
+      features: data
         .map((item) => {
-          if (!item.lokasi_geojson?.coordinates) return null
-
+          if (!item.lokasi_geojson) return null
+          let geometry = null
+          try {
+            geometry = typeof item.lokasi_geojson === "string"
+              ? JSON.parse(item.lokasi_geojson)
+              : item.lokasi_geojson
+          } catch (err) {
+            console.error("Gagal parse lokasi_geojson:", err)
+            return null
+          }
           return {
             type: "Feature",
-            geometry: item.lokasi_geojson,
+            geometry,
             properties: {
               id_blok: item.id_blok,
               nama_blok: item.nama_blok,
@@ -71,18 +87,36 @@ onMounted(async () => {
         })
         .filter(Boolean)
     }
+
+    await nextTick()
+    bindEvents()
   } catch (err) {
     console.error("Gagal ambil data blok:", err)
   }
-})
+}
 
-const onLayerAdd = (e) => {
-  const geojsonLayer = e.target
-  geojsonLayer.eachLayer((layer) => {
+watch(
+  () => props.selectedDate,
+  (newDate) => {
+    if (newDate) fetchBlok(newDate)
+  },
+  { immediate: true }
+)
+
+const onGeoJsonReady = (geojsonLayer) => {
+  geojsonLayerRef = geojsonLayer
+  bindEvents()
+}
+
+const bindEvents = () => {
+  if (!geojsonLayerRef) return
+  geojsonLayerRef.eachLayer((layer) => {
     const props = layer.feature?.properties
     if (!props) return
 
-    const popupContent = `
+    layer.off()
+
+    layer.bindPopup(`
       <div>
         <strong>ID Blok:</strong> ${props.id_blok}<br/>
         <strong>Nama Blok:</strong> ${props.nama_blok}<br/>
@@ -92,19 +126,13 @@ const onLayerAdd = (e) => {
         <strong>Umur Pohon:</strong> ${props.umur ?? "Tidak diketahui"} tahun<br/>
         <strong>Kategori Usia:</strong> ${props.kategori_umur}
       </div>
-    `
-    layer.bindPopup(popupContent)
+    `)
 
-    // Hover effect
     layer.on("mouseover", function () {
-      this.setStyle({
-        weight: 2,
-        fillColor: "#E7FBE6",
-        fillOpacity: 1
-      })
+      this.setStyle({ weight: 2, fillColor: "#E7FBE6", fillOpacity: 1 })
     })
     layer.on("mouseout", function () {
-      geojsonLayer.resetStyle(layer)
+      geojsonLayerRef.resetStyle(layer)
     })
   })
 }

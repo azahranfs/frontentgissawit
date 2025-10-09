@@ -42,9 +42,6 @@
                   <input v-model="form.nama_peta" type="text" class="form-control" placeholder="Nama Peta" required />
                 </div>
                 <div class="col-md-6 mb-3">
-                  <input v-model="form.tanggal_upload" type="date" class="form-control" required />
-                </div>
-                <div class="col-md-6 mb-3">
                   <input v-model="form.uploader" type="text" class="form-control" placeholder="Uploader" required />
                 </div>
                 <div class="col-md-6 mb-3">
@@ -58,10 +55,26 @@
                   <input @change="handleFileUpload" type="file" class="form-control" required />
                 </div>
               </div>
+
+              <!-- Progress bar upload -->
+              <div v-if="uploadProgress > 0" class="mb-3">
+                <div class="progress">
+                  <div
+                    class="progress-bar progress-bar-striped progress-bar-animated"
+                    role="progressbar"
+                    :style="{ width: uploadProgress + '%' }"
+                  >
+                    {{ uploadProgress }}%
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-              <button type="submit" class="btn btn-primary">Upload</button>
+              <button type="submit" class="btn btn-primary" :disabled="isUploading">
+                <span v-if="isUploading">Uploading...</span>
+                <span v-else>Upload</span>
+              </button>
             </div>
           </form>
         </div>
@@ -81,9 +94,6 @@
               <div class="row">
                 <div class="col-md-6 mb-3">
                   <input v-model="editForm.nama_peta" type="text" class="form-control" placeholder="Nama Peta" required />
-                </div>
-                <div class="col-md-6 mb-3">
-                  <input v-model="editForm.tanggal_upload" type="date" class="form-control" required />
                 </div>
                 <div class="col-md-6 mb-3">
                   <input v-model="editForm.uploader" type="text" class="form-control" placeholder="Uploader" required />
@@ -127,7 +137,7 @@ export default {
       columns: [
         { label: 'ID', field: 'id_peta', sortable: true },
         { label: 'Nama Peta', field: 'nama_peta', sortable: true },
-        { label: 'Tanggal Upload', field: 'tanggal_upload', sortable: true },
+        { label: 'Tanggal Upload', field: 'uploaded_at', sortable: true },
         { label: 'Uploader', field: 'uploader', sortable: true },
         { label: 'Format File', field: 'format_file', sortable: true },
         { label: 'Link Peta', field: 'link_peta', sortable: true },
@@ -135,7 +145,6 @@ export default {
       ],
       form: {
         nama_peta: '',
-        tanggal_upload: '',
         uploader: '',
         format_file: '',
         file: null
@@ -143,11 +152,12 @@ export default {
       editForm: {
         id_peta: null,
         nama_peta: '',
-        tanggal_upload: '',
         uploader: '',
         format_file: '',
         file: null
-      }
+      },
+      uploadProgress: 0,
+      isUploading: false
     }
   },
   mounted() {
@@ -169,13 +179,20 @@ export default {
       try {
         const formData = new FormData()
         formData.append('nama_peta', this.form.nama_peta)
-        formData.append('tanggal_upload', this.form.tanggal_upload)
         formData.append('uploader', this.form.uploader)
         formData.append('format_file', this.form.format_file)
         formData.append('file', this.form.file)
 
+        this.isUploading = true
+        this.uploadProgress = 0
+
         await axios.post('/upload_peta', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              this.uploadProgress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            }
+          }
         })
 
         const modalEl = document.getElementById('uploadModal')
@@ -189,12 +206,14 @@ export default {
       } catch (error) {
         console.error('Gagal upload peta:', error)
         alert('Gagal upload peta')
+      } finally {
+        this.isUploading = false
+        this.uploadProgress = 0
       }
     },
     resetForm() {
       this.form = {
         nama_peta: '',
-        tanggal_upload: '',
         uploader: '',
         format_file: '',
         file: null
@@ -219,7 +238,6 @@ export default {
       this.editForm = {
         id_peta: peta.id_peta,
         nama_peta: peta.nama_peta,
-        tanggal_upload: peta.tanggal_upload,
         uploader: peta.uploader,
         format_file: peta.format_file,
         file: null
@@ -234,7 +252,6 @@ export default {
         const formData = new FormData()
         formData.append('_method', 'PUT')
         formData.append('nama_peta', this.editForm.nama_peta)
-        formData.append('tanggal_upload', this.editForm.tanggal_upload)
         formData.append('uploader', this.editForm.uploader)
         formData.append('format_file', this.editForm.format_file)
 

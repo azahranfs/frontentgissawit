@@ -6,7 +6,7 @@ import UploadPeta from '../views/UploadPeta.vue'
 import DataPohon from '../views/DataPohon.vue'
 import DataBlok from '../views/DataBlok.vue'
 import DataLahan from '../views/DataLahan.vue'
-// import DataZona from '../views/DataZona.vue'
+import DataZona from '../views/DataZona.vue'
 import DataIrigasi from '../views/DataIrigasi.vue'
 import DataJalan from '../views/DataJalan.vue'
 import DataPekerja from '../views/DataPekerja.vue'
@@ -54,11 +54,11 @@ const routes = [
         name: 'DataLahan',
         component: DataLahan
       },
-      // {
-      //   path: 'data-zona',
-      //   name: 'DataZona',
-      //   component: DataZona
-      // },
+      {
+        path: 'data-zona',
+        name: 'DataZona',
+        component: DataZona
+      },
       {
         path: 'data-irigasi',
         name: 'DataIrigasi',

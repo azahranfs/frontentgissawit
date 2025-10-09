@@ -1,41 +1,38 @@
 <template>
-  <l-geo-json
-    v-if="irigasiGeojson"
-    layer-type="overlay"
-    name="Irigasi"
-    :geojson="irigasiGeojson"
-    :options-style="styleIrigasi"
-    @add="onIrigasiLayerAdd"
-  />
+  <l-layer-group layer-type="overlay" name="Irigasi">
+    <LGeoJson
+      v-if="irigasiGeojson"
+      layer-type="overlay"
+      :geojson="irigasiGeojson"
+      :options-style="styleIrigasi"
+      @add="onLayerAdd"
+    />
+  </l-layer-group>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
-import { LGeoJson } from "@vue-leaflet/vue-leaflet"
+import { ref, watch, nextTick } from "vue"
+import { LGeoJson, LLayerGroup } from "@vue-leaflet/vue-leaflet"
 import axios from "@/axios"
 
+const props = defineProps({
+  selectedDate: { type: String, required: true }
+})
+
 const irigasiGeojson = ref(null)
+let geojsonLayerRef = null
 
-const formatTanggal = (t) => {
-  if (!t) return "-"
-  return new Date(t).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  })
-}
+const formatTanggal = (t) =>
+  t
+    ? new Date(t).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+    : "-"
 
-// Pewarnaan berdasarkan kondisi
-const getColorByKondisi = (kondisi) => {
-  switch (kondisi?.toLowerCase()) {
-    case "normal":
-      return "#2ecc71" // hijau
-    case "perlu perhatian":
-      return "#f1c40f" // kuning
-    case "rusak":
-      return "#e74c3c" // merah
-    default:
-      return "#95a5a6" // abu-abu jika tidak diketahui
+const getColorByKondisi = (k) => {
+  switch (k?.toLowerCase()) {
+    case "normal": return "#2ecc71"
+    case "perlu perhatian": return "#f1c40f"
+    case "rusak": return "#e74c3c"
+    default: return "#95a5a6"
   }
 }
 
@@ -46,67 +43,91 @@ const styleIrigasi = (feature) => ({
   weight: 2
 })
 
-onMounted(async () => {
-  const response = await axios.get("/irigasi")
-  const data = response.data
-  irigasiGeojson.value = {
-    type: "FeatureCollection",
-    features: (Array.isArray(data) ? data : [data]).map(item => {
-      if (!item.lokasi_geojson?.coordinates) return null
-      return {
-        type: "Feature",
-        geometry: item.lokasi_geojson,
-        properties: {
-          id_irigasi: item.id_irigasi,
-          kondisi: item.kondisi,
-          sumber: item.sumber,
-          luas: item.luas,
-          tanggal_upload: formatTanggal(item.upload_peta?.tanggal_upload)
-        }
+const fetchIrigasi = async (tanggal) => {
+  try {
+    const res = await axios.get("/irigasi", {
+      params: {
+        tanggal: tanggal || "",
+        _ts: Date.now() // anti-cache
       }
-    }).filter(Boolean)
+    })
+
+    const data = Array.isArray(res.data) ? res.data : [res.data]
+
+    irigasiGeojson.value = {
+      type: "FeatureCollection",
+      features: data
+        .filter(item => item.lokasi_geojson)
+        .map(item => {
+          let geometry
+          try {
+            geometry = typeof item.lokasi_geojson === "string"
+              ? JSON.parse(item.lokasi_geojson)
+              : item.lokasi_geojson
+          } catch (err) {
+            console.error("Gagal parse lokasi_geojson:", err)
+            return null
+          }
+          return {
+            type: "Feature",
+            geometry,
+            properties: {
+              id_irigasi: item.id_irigasi,
+              kondisi: item.kondisi,
+              sumber: item.sumber,
+              luas: item.luas,
+              tanggal_upload: formatTanggal(item.upload_peta?.tanggal_upload)
+            }
+          }
+        })
+        .filter(Boolean)
+    }
+
+    await nextTick()
+    bindEvents()
+  } catch (err) {
+    console.error("Gagal ambil data irigasi:", err)
   }
-})
+}
 
-const onIrigasiLayerAdd = (e) => {
-  const geojsonLayer = e.target
-  geojsonLayer.eachLayer((layer) => {
-    const props = layer.feature?.properties
-    if (!props) return
+const onLayerAdd = (e) => {
+  geojsonLayerRef = e?.mapObject || e?.target || e
+  bindEvents()
+}
 
-    const popupContent = `
+const bindEvents = () => {
+  if (!geojsonLayerRef || !geojsonLayerRef.eachLayer) return
+
+  geojsonLayerRef.eachLayer((layer) => {
+    const p = layer.feature?.properties
+    if (!p) return
+
+    layer.off() // hapus listener lama biar nggak dobel
+
+    layer.bindPopup(`
       <div>
-        <strong>ID Irigasi:</strong> ${props.id_irigasi}<br/>
-        <strong>Kondisi:</strong> ${props.kondisi}<br/>
-        <strong>Sumber:</strong> ${props.sumber}<br/>
-        <strong>Luas:</strong> ${props.luas} Ha<br/>
-        <strong>Tanggal Upload:</strong> ${props.tanggal_upload}
+        <strong>ID Irigasi:</strong> ${p.id_irigasi}<br/>
+        <strong>Kondisi:</strong> ${p.kondisi}<br/>
+        <strong>Sumber:</strong> ${p.sumber}<br/>
+        <strong>Luas:</strong> ${p.luas} Ha<br/>
+        <strong>Tanggal Upload:</strong> ${p.tanggal_upload}
       </div>
-    `
+    `)
 
-    layer.on("click", () => {
-      layer.bindPopup(popupContent).openPopup()
+    layer.on("mouseover", function () {
+      this.setStyle({ weight: 3, color: "#63C8FF", fillColor: "#63C8FF", fillOpacity: 1 })
     })
-
-    // Hover efek: highlight cream
-    layer.on("mouseover", () => {
-      layer.setStyle({
-        weight: 3,
-        color: "#63C8FF", // warna cream
-        fillColor: "#63C8FF",
-        fillOpacity: 1
-      })
-    })
-
-    layer.on("mouseout", () => {
-      const kondisi = props.kondisi
-      layer.setStyle({
-        color: getColorByKondisi(kondisi),
-        fillColor: getColorByKondisi(kondisi),
-        fillOpacity: 1,
-        weight: 2
-      })
+    layer.on("mouseout", function () {
+      geojsonLayerRef.resetStyle(layer)
     })
   })
 }
+
+watch(
+  () => props.selectedDate,
+  (newDate) => {
+    if (newDate) fetchIrigasi(newDate)
+  },
+  { immediate: true }
+)
 </script>

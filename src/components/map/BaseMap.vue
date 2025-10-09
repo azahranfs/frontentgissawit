@@ -1,5 +1,26 @@
 <template>
   <div style="position: relative;">
+    <!-- Input tanggal di atas map -->
+    <div 
+      style="
+        position: absolute;
+        z-index: 1000;
+        top: 10px; 
+        left: 60px;
+        background: white;
+        padding: 5px;
+        border-radius: 5px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      "
+    >
+      <label style="font-size: 12px; font-weight: bold;">Tanggal:</label><br />
+      <input 
+        type="date" 
+        v-model="selectedDate" 
+        style="padding: 2px; font-size: 12px;"
+      />
+    </div>
+
     <l-map
       ref="leafletMap"
       v-model:zoom="zoom"
@@ -7,8 +28,10 @@
       style="height: 500px; width: 100%;"
       @ready="onMapReady"
     >
-      <l-control-layers :collapsed="false" />
+      <!-- 🔹 Layer Control (tetap bawaan vue-leaflet) -->
+      <l-control-layers ref="layerControlRef" :collapsed="false" />
 
+      <!-- Basemap -->
       <l-tile-layer
         layer-type="base"
         name="Street"
@@ -24,18 +47,36 @@
         :subdomains="subdomains"
       />
 
-      <!-- Layer terpisah -->
-      <BlokLayer />
-      <PekerjaLayer />
-      <IrigasiLayer />
-      <JalanLayer />
+      <!-- Layer terpisah (tidak diubah) -->
+      <ZonaLayer :selected-date="selectedDate" />
+      <BlokLayer :selected-date="selectedDate" />
+      <PekerjaLayer :selected-date="selectedDate" />
+      <IrigasiLayer :selected-date="selectedDate"/>
+      <JalanLayer :selected-date="selectedDate" />
       <LahanLayer />
-    </l-map>s
+      <PohonLayer />
+
+      <!-- 🔹 GeoTIFF Peta Layer dari API (pakai link_peta) -->
+      <!-- map.value baru diisi setelah onMapReady jalan -->
+      <PetaLayer 
+        v-if="map && layerControlRef?.leafletObject" 
+        :map="map" 
+        :layerControl="layerControlRef.leafletObject" 
+        :date="selectedDate"
+      />
+    </l-map>
 
     <!-- Legenda Scrollable -->
     <div id="legend" class="leaflet-top leaflet-right">
       <div class="info legend scrollable-legend">
         <strong>Legenda Peta</strong><br /><br />
+
+        <div class="legend-section">
+          <strong>Zona</strong><br />
+          <i style="background: #123524;"></i> Padat (Jumlah Pohon >= 10.000)<br />
+          <i style="background: #3E7B27;"></i> Sedang (Jumlah Pohon 7.000–9.999)<br />
+          <i style="background: #85A947;"></i> Jarang (Jumlah Pohon 4.000–6.999)<br />
+        </div>
 
         <div class="legend-section">
           <strong>Blok</strong><br />
@@ -81,11 +122,15 @@ import {
 import "leaflet/dist/leaflet.css"
 import { ref } from "vue"
 
+// Import semua layer (tidak diubah)
+import ZonaLayer from './layers/ZonaLayer.vue'
 import BlokLayer from './layers/BlokLayer.vue'
 import PekerjaLayer from './layers/PekerjaLayer.vue'
 import IrigasiLayer from './layers/IrigasiLayer.vue'
 import JalanLayer from './layers/JalanLayer.vue'
 import LahanLayer from './layers/LahanLayer.vue'
+import PetaLayer from './layers/PetaLayer.vue'
+import PohonLayer from './layers/PohonLayer.vue'   
 
 const zoom = ref(14)
 const center = ref([-4.024096, 105.044538])
@@ -94,9 +139,21 @@ const subdomains = ['mt0', 'mt1', 'mt2', 'mt3']
 const streetUrl = "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
 const satelliteUrl = "https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
 
+// Input tanggal default
+const selectedDate = ref(new Date().toISOString().substring(0, 10))
+
 const map = ref(null)
+const layerControlRef = ref(null)
+
 function onMapReady(m) {
+  console.log("✅ Map sudah siap:", m)
   map.value = m
+
+  // Tambahin log supaya keliatan objectnya
+  setTimeout(() => {
+    console.log("🔎 layerControlRef:", layerControlRef.value)
+    console.log("🔎 leafletObject:", layerControlRef.value?.leafletObject)
+  }, 1000)
 }
 </script>
 
@@ -106,7 +163,7 @@ function onMapReady(m) {
   top: 250px;
   right: 10px;
   z-index: 1000;
-  pointer-events: auto; /* Tambahkan ini agar scroll bisa nyangkut ke kontainer, bukan ke map */
+  pointer-events: auto;
 }
 
 .info.legend {
@@ -119,7 +176,7 @@ function onMapReady(m) {
   min-width: 160px;
   max-height: 220px;
   overflow-y: auto;
-  pointer-events: auto; /* Ini penting juga */
+  pointer-events: auto;
 }
 
 .info.legend i {

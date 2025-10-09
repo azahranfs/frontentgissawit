@@ -3,7 +3,6 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2>Data Jalan</h2>
       <div>
-        <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Data</button>
         <button class="btn btn-primary" @click="exportCSV">Export CSV</button>
       </div>
     </div>
@@ -15,16 +14,24 @@
       :pagination-options="{ enabled: true, perPage: 5 }"
     >
       <template #table-row="props">
-        <span v-if="props.column.field === 'aksi'">
-          <button class="btn btn-sm btn-outline-secondary me-1" @click="editJalan(props.row)">✎ Edit</button>
-          <button class="btn btn-sm btn-danger" @click="deleteJalan(props.row)">🗑 Hapus</button>
+        <!-- kolom aksi -->
+        <span v-if="props.column.field === 'aksi'" class="d-flex gap-2">
+          <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Data</button>
+          <button class="btn btn-sm btn-outline-secondary" @click="editBlok(props.row)">✎ Edit</button>
+          <button class="btn btn-sm btn-danger" @click="deleteBlok(props.row)">🗑 Hapus</button>
         </span>
-        <span v-else-if="props.column.field === 'lokasi'">
-          {{ props.row.lokasi?.substring(0, 30) + '...' }}
+
+        <!-- tampilkan potongan lokasi_wkb -->
+        <span v-else-if="props.column.field === 'lokasi_wkb'">
+          {{ props.row.lokasi_wkb ? props.row.lokasi_wkb.substring(0, 40) + '...' : '-' }}
         </span>
-        <span v-else-if="props.column.field === 'tanggal_upload'">
-          {{ formatTanggal(props.row.upload_peta?.tanggal_upload) }}
+
+        <!-- format tanggal created_at -->
+        <span v-else-if="props.column.field === 'created_at'">
+          {{ formatTanggal(props.row.created_at) }}
         </span>
+
+        <!-- default -->
         <span v-else>
           {{ props.formattedRow[props.column.field] }}
         </span>
@@ -41,23 +48,24 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+              <!-- readonly kode_unik -->
               <div class="mb-3">
-                <textarea v-model="form.lokasi" class="form-control" rows="3" placeholder="WKT Lokasi Jalan" required></textarea>
+                <label class="form-label">Kode Unik</label>
+                <input v-model="form.kode_unik" type="text" class="form-control" readonly />
               </div>
+
+              <!-- readonly lokasi_wkb -->
+              <div class="mb-3">
+                <label class="form-label">Lokasi (WKB)</label>
+                <textarea v-model="form.lokasi_wkb" class="form-control" rows="3" readonly></textarea>
+              </div>
+
               <div class="row">
                 <div class="col-md-6 mb-3">
                   <input v-model="form.kondisi" type="text" class="form-control" placeholder="Kondisi" />
                 </div>
                 <div class="col-md-6 mb-3">
                   <input v-model.number="form.lebar" type="number" step="0.01" class="form-control" placeholder="Lebar (m)" />
-                </div>
-                <div class="col-md-6 mb-3">
-                  <select v-model="form.id_peta" class="form-control">
-                    <option disabled value="">Pilih Peta</option>
-                    <option v-for="peta in daftarPeta" :key="peta.id_peta" :value="peta.id_peta">
-                      {{ peta.nama_peta }}
-                    </option>
-                  </select>
                 </div>
               </div>
             </div>
@@ -80,34 +88,20 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-              <!-- LOKASI: readonly -->
+              <!-- LOKASI WKB: readonly -->
               <div class="mb-3">
                 <label class="form-label">Lokasi (WKT)</label>
-                <textarea v-model="editForm.lokasi" class="form-control" rows="3" readonly></textarea>
+                <textarea v-model="editForm.lokasi_wkb" class="form-control" rows="3" readonly></textarea>
               </div>
 
               <div class="row">
-                <!-- KONDISI: editable -->
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Kondisi</label>
                   <input v-model="editForm.kondisi" type="text" class="form-control" placeholder="Kondisi" />
                 </div>
-
-                <!-- LEBAR: editable -->
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Lebar (m)</label>
                   <input v-model.number="editForm.lebar" type="number" step="0.01" class="form-control" placeholder="Lebar (m)" />
-                </div>
-
-                <!-- ID PETA -->
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Peta</label>
-                  <select v-model="editForm.id_peta" class="form-control">
-                    <option value="">Pilih Peta</option>
-                    <option v-for="peta in daftarPeta" :key="peta.id_peta" :value="peta.id_peta">
-                      {{ peta.nama_peta }}
-                    </option>
-                  </select>
                 </div>
               </div>
             </div>
@@ -129,45 +123,41 @@ import 'vue-good-table-next/dist/vue-good-table-next.css'
 
 export default {
   name: 'DataJalan',
-  components: {
-    VueGoodTable
-  },
+  components: { VueGoodTable },
   data() {
     return {
       jalanList: [],
-      daftarPeta: [],
       columns: [
         { label: 'ID', field: 'id_jalan', sortable: true },
-        { label: 'Lokasi', field: 'lokasi' },
+        { label: 'Kode Unik', field: 'kode_unik' },
         { label: 'Kondisi', field: 'kondisi' },
         { label: 'Lebar (m)', field: 'lebar' },
-        { label: 'Tanggal Upload', field: 'tanggal_upload' },
+        { label: 'Lokasi (WKB)', field: 'lokasi_wkb' },
+        { label: 'Tanggal Buat', field: 'created_at' },
         { label: 'Aksi', field: 'aksi' }
       ],
       form: {
-        lokasi: '',
+        kode_unik: '',
+        lokasi_wkb: '',
         kondisi: '',
-        lebar: null,
-        id_peta: ''
+        lebar: null
       },
       editForm: {
         id_jalan: null,
-        lokasi: '',
+        lokasi_wkb: '',
         kondisi: '',
-        lebar: null,
-        id_peta: ''
+        lebar: null
       }
     }
   },
   mounted() {
     this.fetchJalan()
-    this.fetchPeta()
   },
   methods: {
     formatTanggal(tanggal) {
       if (!tanggal) return '-'
-      const tanggalObj = new Date(tanggal)
-      return tanggalObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+      const t = new Date(tanggal)
+      return t.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
     },
     async fetchJalan() {
       try {
@@ -177,21 +167,22 @@ export default {
         console.error('Gagal ambil data jalan:', err)
       }
     },
-    async fetchPeta() {
-      try {
-        const res = await axios.get('/upload_peta')
-        this.daftarPeta = res.data
-      } catch (err) {
-        console.error('Gagal ambil data peta:', err)
+    addFromRow(row) {
+      this.form = {
+        kode_unik: row.kode_unik,
+        lokasi_wkb: row.lokasi_wkb,
+        kondisi: '',
+        lebar: null
       }
+      this.showModal('addModal')
     },
     async submitForm() {
       try {
         const payload = {
-          lokasi: this.form.lokasi,
+          kode_unik: this.form.kode_unik,
+          lokasi_wkb: this.form.lokasi_wkb,
           kondisi: this.form.kondisi || null,
-          lebar: this.form.lebar || null,
-          id_peta: this.form.id_peta || null
+          lebar: this.form.lebar || null
         }
         await axios.post('/jalan', payload)
         this.fetchJalan()
@@ -206,10 +197,9 @@ export default {
     editJalan(row) {
       this.editForm = {
         id_jalan: row.id_jalan,
+        lokasi_wkb: row.lokasi_wkb,
         kondisi: row.kondisi,
-        lebar: row.lebar,
-        id_peta: row.id_peta,
-        lokasi: row.lokasi // hanya untuk tampil di readonly textarea, tidak dikirim
+        lebar: row.lebar
       }
       this.showModal('editModal')
     },
@@ -217,10 +207,8 @@ export default {
       try {
         const payload = {
           kondisi: this.editForm.kondisi || null,
-          lebar: this.editForm.lebar || null,
-          id_peta: this.editForm.id_peta || null
+          lebar: this.editForm.lebar || null
         }
-
         await axios.put(`/jalan/${this.editForm.id_jalan}`, payload)
         this.fetchJalan()
         this.hideModal('editModal')
@@ -231,12 +219,7 @@ export default {
       }
     },
     resetForm() {
-      this.form = {
-        lokasi: '',
-        kondisi: '',
-        lebar: null,
-        id_peta: ''
-      }
+      this.form = { kode_unik: '', lokasi_wkb: '', kondisi: '', lebar: null }
     },
     showModal(id) {
       const modalEl = document.getElementById(id)
@@ -250,12 +233,24 @@ export default {
       if (!modal) modal = new window.bootstrap.Modal(modalEl)
       modal.hide()
     },
+    
+  async deleteJalan(row) {
+    if (!confirm(`Yakin hapus data jalan dengan kode ${row.kode_unik}?`)) return
+    try {
+      await axios.delete(`/jalan/${row.id_jalan}`)
+      this.fetchJalan()
+      alert('Data berhasil dihapus')
+    } catch (err) {
+      console.error('Gagal hapus data jalan:', err)
+      alert('Gagal menghapus data')
+    }
+  },
+  
     exportCSV() {
-      let csv = 'ID,Lokasi,Kondisi,Lebar,Tanggal Upload,Peta\n'
+      let csv = 'ID,Kode Unik,Kondisi,Lebar,Lokasi WKB,Tanggal Buat\n'
       this.jalanList.forEach(item => {
-        const namaPeta = item.upload_peta?.nama_peta || ''
-        const tanggal = this.formatTanggal(item.upload_peta?.tanggal_upload)
-        csv += `${item.id_jalan},"${item.lokasi}","${item.kondisi || ''}",${item.lebar || ''},"${tanggal}","${namaPeta}"\n`
+        const tanggal = this.formatTanggal(item.created_at)
+        csv += `${item.id_jalan},"${item.kode_unik}","${item.kondisi || ''}",${item.lebar || ''},"${item.lokasi_wkb || ''}","${tanggal}"\n`
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)

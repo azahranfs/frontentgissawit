@@ -1,7 +1,7 @@
 <template>
-  <div class="data-irigasi-page">
+  <div class="data-zona-page">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2>Data Irigasi</h2>
+      <h2>Data Zona</h2>
       <div>
         <button class="btn btn-primary" @click="exportCSV">Export CSV</button>
       </div>
@@ -9,21 +9,21 @@
 
     <vue-good-table
       :columns="columns"
-      :rows="irigasiList"
+      :rows="zonaList"
       :search-options="{ enabled: true }"
       :pagination-options="{ enabled: true, perPage: 5 }"
     >
       <template #table-row="props">
         <!-- kolom aksi -->
         <span v-if="props.column.field === 'aksi'" class="d-flex gap-2">
-          <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Data</button>
-          <button class="btn btn-sm btn-outline-secondary" @click="editIrigasi(props.row)">✎ Edit</button>
-          <button class="btn btn-sm btn-danger" @click="deleteIrigasi(props.row)">🗑 Hapus</button>
+            <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Data</button>
+            <button class="btn btn-sm btn-outline-secondary" @click="editBlok(props.row)">✎ Edit</button>
+            <button class="btn btn-sm btn-danger" @click="deleteBlok(props.row)">🗑 Hapus</button>
         </span>
-
-        <!-- tampilkan potongan lokasi_wkb -->
-        <span v-else-if="props.column.field === 'lokasi_wkb'">
-          {{ props.row.lokasi_wkb ? props.row.lokasi_wkb.substring(0, 40) + '...' : '-' }}
+        
+        <!-- tampilkan potongan lokasi_zona_wkb -->
+        <span v-else-if="props.column.field === 'lokasi_zona_wkb'">
+          {{ props.row.lokasi_zona_wkb ? props.row.lokasi_zona_wkb.substring(0, 40) + '...' : '-' }}
         </span>
 
         <!-- format tanggal created_at -->
@@ -44,7 +44,7 @@
         <div class="modal-content">
           <form @submit.prevent="submitForm">
             <div class="modal-header">
-              <h5 class="modal-title">Tambah Data Irigasi</h5>
+              <h5 class="modal-title">Tambah Data Zona</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -54,22 +54,19 @@
                 <input v-model="form.kode_unik" type="text" class="form-control" readonly />
               </div>
 
-              <!-- readonly lokasi_wkb -->
+              <!-- readonly lokasi_zona_wkb -->
               <div class="mb-3">
                 <label class="form-label">Lokasi (WKB)</label>
-                <textarea v-model="form.lokasi_wkb" class="form-control" rows="3" readonly></textarea>
+                <textarea v-model="form.lokasi_zona_wkb" class="form-control" rows="3" readonly></textarea>
               </div>
 
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <input v-model="form.kondisi" type="text" class="form-control" placeholder="Kondisi" />
+                  <input v-model="form.nama_zona" type="text" class="form-control" placeholder="Nama Zona" />
                 </div>
                 <div class="col-md-6 mb-3">
-                  <input v-model="form.sumber" type="text" class="form-control" placeholder="Sumber" />
+                  <input v-model.number="form.jumlah" type="number" step="1" class="form-control" placeholder="Jumlah" />
                 </div>
-              </div>
-              <div class="mb-3">
-                <input v-model="form.luas" type="number" step="0.1" class="form-control" placeholder="Luas (Ha)" />
               </div>
             </div>
             <div class="modal-footer">
@@ -87,33 +84,29 @@
         <div class="modal-content">
           <form @submit.prevent="submitEdit">
             <div class="modal-header">
-              <h5 class="modal-title">Edit Data Irigasi</h5>
+              <h5 class="modal-title">Edit Data Zona</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label">Kode Unik</label>
-                <input v-model="editForm.kode_unik" type="text" class="form-control" readonly />
+                <input v-model="form.kode_unik" type="text" class="form-control" readonly />
               </div>
 
               <div class="mb-3">
                 <label class="form-label">Lokasi (WKB)</label>
-                <textarea v-model="editForm.lokasi_wkb" class="form-control" rows="3" readonly></textarea>
+                <textarea v-model="editForm.lokasi_zona_wkb" class="form-control" rows="3" readonly></textarea>
               </div>
 
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">Kondisi</label>
-                  <input v-model="editForm.kondisi" type="text" class="form-control" />
+                  <label class="form-label">Nama Zona</label>
+                  <input v-model="editForm.nama_zona" type="text" class="form-control" placeholder="Nama Zona" />
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">Sumber</label>
-                  <input v-model="editForm.sumber" type="text" class="form-control" />
+                  <label class="form-label">Jumlah</label>
+                  <input v-model.number="editForm.jumlah" type="number" step="1" class="form-control" placeholder="Jumlah" />
                 </div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Luas (Ha)</label>
-                <input v-model="editForm.luas" type="number" step="0.1" class="form-control" />
               </div>
             </div>
             <div class="modal-footer">
@@ -133,40 +126,36 @@ import { VueGoodTable } from 'vue-good-table-next'
 import 'vue-good-table-next/dist/vue-good-table-next.css'
 
 export default {
-  name: 'DataIrigasi',
+  name: 'DataZona',
   components: { VueGoodTable },
   data() {
     return {
-      irigasiList: [],
+      zonaList: [],
       columns: [
-        { label: 'ID', field: 'id_irigasi', sortable: true },
+        { label: 'ID', field: 'id_zona', sortable: true },
         { label: 'Kode Unik', field: 'kode_unik' },
-        { label: 'Kondisi', field: 'kondisi' },
-        { label: 'Sumber', field: 'sumber' },
-        { label: 'Luas (Ha)', field: 'luas' },
-        { label: 'Lokasi (WKB)', field: 'lokasi_wkb' },
+        { label: 'Nama Zona', field: 'nama_zona' },
+        { label: 'Jumlah', field: 'jumlah' },
+        { label: 'Lokasi (WKB)', field: 'lokasi_zona_wkb' },
         { label: 'Tanggal Buat', field: 'created_at' },
         { label: 'Aksi', field: 'aksi' }
       ],
       form: {
         kode_unik: '',
-        lokasi_wkb: '',
-        kondisi: '',
-        sumber: '',
-        luas: ''
+        lokasi_zona_wkb: '',
+        nama_zona: '',
+        jumlah: null
       },
       editForm: {
-        id_irigasi: null,
-        kode_unik: '',
-        lokasi_wkb: '',
-        kondisi: '',
-        sumber: '',
-        luas: ''
+        id_zona: null,
+        lokasi_zona_wkb: '',
+        nama_zona: '',
+        jumlah: null
       }
     }
   },
   mounted() {
-    this.fetchIrigasi()
+    this.fetchZona()
   },
   methods: {
     formatTanggal(tanggal) {
@@ -174,72 +163,67 @@ export default {
       const t = new Date(tanggal)
       return t.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
     },
-    async fetchIrigasi() {
+    async fetchZona() {
       try {
-        const res = await axios.get('/irigasi')
-        this.irigasiList = res.data
+        const res = await axios.get('/zona')
+        this.zonaList = res.data
       } catch (err) {
-        console.error('Gagal ambil data irigasi:', err)
+        console.error('Gagal ambil data zona:', err)
       }
     },
     addFromRow(row) {
       this.form = {
         kode_unik: row.kode_unik,
-        lokasi_wkb: row.lokasi_wkb,
-        kondisi: '',
-        sumber: '',
-        luas: ''
+        lokasi_zona_wkb: row.lokasi_zona_wkb,
+        nama_zona: '',
+        jumlah: null
       }
       this.showModal('addModal')
     },
     async submitForm() {
       try {
-        // map field ke format yang API mau
         const payload = {
           kode_unik: this.form.kode_unik,
-          kondisi: this.form.kondisi,
-          sumber: this.form.sumber,
-          luas: this.form.luas,
-          lokasi: this.form.lokasi_wkb // ⬅️ penting: pakai lokasi, bukan lokasi_wkb
+          lokasi_zona_wkb: this.form.lokasi_zona_wkb,
+          nama_zona: this.form.nama_zona || null,
+          jumlah: this.form.jumlah || null
         }
-
-        await axios.post('/irigasi', payload, {
-          headers: { 'Content-Type': 'application/json' }
-        })
-
-        this.fetchIrigasi()
+        await axios.post('/zona', payload)
+        this.fetchZona()
         this.resetForm()
         this.hideModal('addModal')
         alert('Data berhasil ditambahkan')
       } catch (err) {
-        console.error('Gagal tambah data irigasi:', err.response?.data || err.message)
+        console.error('Gagal tambah data zona:', err)
         alert('Gagal menambahkan data')
       }
     },
-    editIrigasi(row) {
-      this.editForm = { ...row }
+    editZona(row) {
+      this.editForm = {
+        id_zona: row.id_zona,
+        lokasi_zona_wkb: row.lokasi_zona_wkb,
+        nama_zona: row.nama_zona,
+        jumlah: row.jumlah
+      }
       this.showModal('editModal')
     },
     async submitEdit() {
       try {
         const payload = {
-          kondisi: this.editForm.kondisi,
-          sumber: this.editForm.sumber,
-          luas: this.editForm.luas
+          nama_zona: this.editForm.nama_zona || null,
+          jumlah: this.editForm.jumlah || null
         }
-        await axios.put(`/irigasi/${this.editForm.id_irigasi}`, payload, {
-          headers: { 'Content-Type': 'application/json' }
-        })
-        this.fetchIrigasi()
+        await axios.put(`/zona/${this.editForm.id_zona}`, payload)
+        this.fetchZona()
         this.hideModal('editModal')
         alert('Data berhasil diperbarui')
       } catch (err) {
-        console.error('Gagal update data irigasi:', err.response?.data || err.message)
+        console.error('Gagal update data zona:', err)
         alert('Gagal memperbarui data')
       }
     },
     resetForm() {
-      this.form = { kode_unik: '', lokasi_wkb: '', kondisi: '', sumber: '', luas: '' }
+      this.form = { kode_unik: '', lokasi_zona_wkb: '', nama_zona: '', jumlah: null }
     },
     showModal(id) {
       const modalEl = document.getElementById(id)
@@ -253,28 +237,28 @@ export default {
       if (!modal) modal = new window.bootstrap.Modal(modalEl)
       modal.hide()
     },
-    async deleteIrigasi(row) {
-      if (!confirm(`Yakin hapus data irigasi dengan kode ${row.kode_unik}?`)) return
+    async deleteZona(row) {
+      if (!confirm(`Yakin hapus data zona dengan kode ${row.kode_unik}?`)) return
       try {
-        await axios.delete(`/irigasi/${row.id_irigasi}`)
-        this.fetchIrigasi()
+        await axios.delete(`/zona/${row.id_zona}`)
+        this.fetchZona()
         alert('Data berhasil dihapus')
       } catch (err) {
-        console.error('Gagal hapus data irigasi:', err)
+        console.error('Gagal hapus data zona:', err)
         alert('Gagal menghapus data')
       }
     },
     exportCSV() {
-      let csv = 'ID,Kode Unik,Kondisi,Sumber,Luas,Lokasi WKB,Tanggal Buat\n'
-      this.irigasiList.forEach(item => {
+      let csv = 'ID,Kode Unik,Nama Zona,Jumlah,Lokasi WKB,Tanggal Buat\n'
+      this.zonaList.forEach(item => {
         const tanggal = this.formatTanggal(item.created_at)
-        csv += `${item.id_irigasi},"${item.kode_unik}","${item.kondisi || ''}","${item.sumber || ''}",${item.luas || ''},"${item.lokasi_wkb || ''}","${tanggal}"\n`
+        csv += `${item.id_zona},"${item.kode_unik}","${item.nama_zona || ''}",${item.jumlah || ''},"${item.lokasi_zona_wkb || ''}","${tanggal}"\n`
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', 'data_irigasi.csv')
+      link.setAttribute('download', 'data_zona.csv')
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -330,7 +314,7 @@ th.sorting-desc .vgt-sort-icon::before {
   margin-top: 10px !important;
 }
 
-.data-irigasi-page {
+.data-zona-page {
   background-color: #fff;
   padding: 20px;
   border-radius: 10px;

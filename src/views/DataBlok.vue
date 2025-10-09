@@ -3,42 +3,51 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2>Data Blok</h2>
       <div>
-        <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addModal">
-          + Add Data
-        </button>
         <button class="btn btn-primary" @click="exportCSV">Export CSV</button>
       </div>
     </div>
 
     <vue-good-table
       :columns="columns"
-      :rows="bloks"
+      :rows="blokList"
       :search-options="{ enabled: true }"
       :pagination-options="{ enabled: true, perPage: 5 }"
     >
       <template #table-row="props">
-        <span v-if="props.column.field === 'pekerja'">
-          {{ props.row.pekerja?.map(p => p.nama).join(', ') || '-' }}
-        </span>
-        <span v-else-if="props.column.field === 'aksi'">
-          <button class="btn btn-sm btn-outline-secondary me-1" @click="editBlok(props.row)">✎ Edit</button>
+        <!-- kolom aksi -->
+        <span v-if="props.column.field === 'aksi'" class="d-flex gap-2">
+          <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Data</button>
+          <button class="btn btn-sm btn-outline-secondary" @click="editBlok(props.row)">✎ Edit</button>
           <button class="btn btn-sm btn-danger" @click="deleteBlok(props.row)">🗑 Hapus</button>
         </span>
-        <span v-else-if="props.column.field === 'pekerja'">
-          <span v-if="Array.isArray(props.row.pekerja)">
-            {{ props.row.pekerja.map(p => p.nama).join(', ') }}
-          </span>
-          <span v-else>
-            {{ props.row.pekerja?.nama || '-' }}
-          </span>
+
+        <!-- tampilkan potongan lokasi WKB -->
+        <span v-else-if="props.column.field === 'lokasi'">
+          {{ props.row.lokasi ? props.row.lokasi.substring(0, 20) + '...' : '-' }}
         </span>
+
+        <!-- tampilkan list pekerja -->
+        <span v-else-if="props.column.field === 'pekerja'">
+          <ul class="mb-0 ps-3">
+            <li v-for="p in props.row.pekerja" :key="p.id_pekerja">
+              {{ p.nama }}
+            </li>
+          </ul>
+        </span>
+
+        <!-- format tanggal -->
+        <span v-else-if="props.column.field === 'waktu_tanam' || props.column.field === 'waktu_panen' || props.column.field === 'created_at'">
+          {{ formatTanggal(props.row[props.column.field]) }}
+        </span>
+
+        <!-- default -->
         <span v-else>
           {{ props.formattedRow[props.column.field] }}
         </span>
       </template>
     </vue-good-table>
 
-    <!-- MODAL ADD -->
+    <!-- MODAL TAMBAH -->
     <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -48,24 +57,45 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-              <input v-model="form.nama_blok" type="text" class="form-control mb-3" placeholder="Nama Blok" required />
-              <textarea v-model="form.lokasi" class="form-control mb-3" placeholder="Lokasi (WKT)" required></textarea>
-              <input v-model="form.waktu_tanam" type="date" class="form-control mb-3" required />
-              <input v-model="form.waktu_panen" type="date" class="form-control mb-3" />
-              <select v-model="form.id_peta" class="form-control mb-3" required>
-                <option disabled value="">Pilih Peta</option>
-                <option v-for="peta in daftarPeta" :key="peta.id_peta" :value="peta.id_peta">{{ peta.nama_peta }}</option>
-              </select>
-              <multiselect
-                v-model="form.id_pekerja"
-                :options="daftarPekerja"
-                :multiple="true"
-                :close-on-select="false"
-                placeholder="Pilih Pekerja"
-                label="nama"
-                track-by="id_pekerja"
-                class="mb-3"
-              />
+              <div class="mb-3">
+                <label class="form-label">Kode Unik</label>
+                <input v-model="form.kode_unik" type="text" class="form-control" readonly />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Lokasi (WKB)</label>
+                <textarea v-model="form.lokasi" class="form-control" rows="3" readonly></textarea>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <input v-model="form.nama_blok" type="text" class="form-control" placeholder="Nama Blok" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <input v-model="form.waktu_tanam" type="date" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <input v-model="form.waktu_panen" type="date" class="form-control" />
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Pilih Pekerja</label>
+                <multiselect
+                  v-model="form.pekerja"
+                  :options="pekerjaList"
+                  :multiple="true"
+                  :close-on-select="false"
+                  placeholder="Pilih Pekerja"
+                  label="nama"
+                  track-by="id_pekerja"
+                  class="mb-3"
+                >
+                  <template #option="props">
+                    {{ props.option.nama }} ({{ props.option.pekerjaan }})
+                  </template>
+                </multiselect>
+              </div>
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -86,23 +116,48 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-              <input v-model="editForm.nama_blok" type="text" class="form-control mb-3" required />
-              <textarea v-model="editForm.lokasi" class="form-control mb-3" required></textarea>
-              <input v-model="editForm.waktu_tanam" type="date" class="form-control mb-3" required />
-              <input v-model="editForm.waktu_panen" type="date" class="form-control mb-3" />
-              <select v-model="editForm.id_peta" class="form-control mb-3" required>
-                <option v-for="peta in daftarPeta" :key="peta.id_peta" :value="peta.id_peta">{{ peta.nama_peta }}</option>
-              </select>
-              <multiselect
-                v-model="editForm.id_pekerja"
-                :options="daftarPekerja"
-                :multiple="true"
-                :close-on-select="false"
-                placeholder="Pilih Pekerja"
-                label="nama"
-                track-by="id_pekerja"
-                class="mb-3"
-              />
+              <div class="mb-3">
+                <label class="form-label">Kode Unik</label>
+                <input v-model="editForm.kode_unik" type="text" class="form-control" readonly />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Lokasi (WKB)</label>
+                <textarea v-model="editForm.lokasi" class="form-control" rows="3" readonly></textarea>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Nama Blok</label>
+                  <input v-model="editForm.nama_blok" type="text" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Waktu Tanam</label>
+                  <input v-model="editForm.waktu_tanam" type="date" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Waktu Panen</label>
+                  <input v-model="editForm.waktu_panen" type="date" class="form-control" />
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Pilih Pekerja</label>
+                <multiselect
+                  v-model="editForm.pekerja"
+                  :options="pekerjaList"
+                  :multiple="true"
+                  :close-on-select="false"
+                  placeholder="Pilih Pekerja"
+                  label="nama"
+                  track-by="id_pekerja"
+                  class="mb-3"
+                >
+                  <template #option="props">
+                    {{ props.option.nama }} ({{ props.option.pekerjaan }})
+                  </template>
+                </multiselect>
+              </div>
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -120,140 +175,124 @@ import axios from '@/axios'
 import { VueGoodTable } from 'vue-good-table-next'
 import 'vue-good-table-next/dist/vue-good-table-next.css'
 import Multiselect from 'vue-multiselect'
-import 'vue-multiselect/dist/vue-multiselect.min.css'
+import 'vue-multiselect/dist/vue-multiselect.css'
 
 export default {
-  components: {
-    VueGoodTable,
-    Multiselect
-  },
+  name: 'DataBlok',
+  components: { VueGoodTable, Multiselect },
   data() {
     return {
-      bloks: [],
-      daftarPeta: [],
-      daftarPekerja: [],
+      blokList: [],
+      pekerjaList: [],
       columns: [
-        { label: 'ID', field: 'id_blok' },
+        { label: 'ID', field: 'id_blok', sortable: true },
+        { label: 'Kode Unik', field: 'kode_unik' },
         { label: 'Nama Blok', field: 'nama_blok' },
         { label: 'Waktu Tanam', field: 'waktu_tanam' },
         { label: 'Waktu Panen', field: 'waktu_panen' },
-        { label: 'Tanggal Upload Peta', field: 'upload_peta.tanggal_upload' },
-        { label: 'Nama Pekerja', field: 'pekerja' },
+        { label: 'Lokasi (WKB)', field: 'lokasi' },
+        { label: 'Pekerja', field: 'pekerja' },
+        { label: 'Tanggal Buat', field: 'created_at' },
         { label: 'Aksi', field: 'aksi' }
       ],
       form: {
-        nama_blok: '',
+        kode_unik: '',
         lokasi: '',
+        nama_blok: '',
         waktu_tanam: '',
         waktu_panen: '',
-        id_peta: '',
-        id_pekerja: []
+        pekerja: []
       },
       editForm: {
         id_blok: null,
-        nama_blok: '',
+        kode_unik: '',
         lokasi: '',
+        nama_blok: '',
         waktu_tanam: '',
         waktu_panen: '',
-        id_peta: '',
-        id_pekerja: []
+        pekerja: []
       }
     }
   },
   mounted() {
-    this.fetchBloks()
-    this.fetchPeta()
+    this.fetchBlok()
     this.fetchPekerja()
   },
   methods: {
-    async fetchBloks() {
+    formatTanggal(tanggal) {
+      if (!tanggal) return '-'
+      const t = new Date(tanggal)
+      return t.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    },
+    async fetchBlok() {
       try {
         const res = await axios.get('/blok')
-        this.bloks = res.data
-      } catch (error) {
-        console.error('Gagal ambil data blok:', error)
-      }
-    },
-    async fetchPeta() {
-      try {
-        const res = await axios.get('/upload_peta')
-        this.daftarPeta = res.data
-      } catch (error) {
-        console.error('Gagal ambil data peta:', error)
+        this.blokList = res.data
+      } catch (err) {
+        console.error('Gagal ambil data blok:', err)
       }
     },
     async fetchPekerja() {
       try {
         const res = await axios.get('/pekerja')
-        this.daftarPekerja = res.data
-      } catch (error) {
-        console.error('Gagal ambil data pekerja:', error)
+        this.pekerjaList = res.data
+      } catch (err) {
+        console.error('Gagal ambil data pekerja:', err)
       }
+    },
+    addFromRow(row) {
+      this.form = {
+        kode_unik: row.kode_unik,
+        lokasi: row.lokasi,
+        nama_blok: '',
+        waktu_tanam: '',
+        waktu_panen: '',
+        pekerja: []
+      }
+      this.showModal('addModal')
     },
     async submitForm() {
       try {
         const payload = {
           ...this.form,
-          id_pekerja: this.form.id_pekerja.map(p => p.id_pekerja)
+          id_pekerja: this.form.pekerja.map(p => p.id_pekerja) // hanya kirim ID
         }
         await axios.post('/blok', payload)
-        this.hideModal('addModal')
+        this.fetchBlok()
         this.resetForm()
-        await this.fetchBloks()
+        this.hideModal('addModal')
         alert('Data berhasil ditambahkan')
-      } catch (error) {
-        console.error('Gagal menambahkan blok:', error)
+      } catch (err) {
+        console.error('Gagal tambah data blok:', err)
         alert('Gagal menambahkan data')
       }
     },
     editBlok(row) {
       this.editForm = {
-        id_blok: row.id_blok,
-        nama_blok: row.nama_blok,
-        lokasi: row.lokasi,
-        waktu_tanam: row.waktu_tanam,
-        waktu_panen: row.waktu_panen,
-        id_peta: row.id_peta,
-        id_pekerja: Array.isArray(row.pekerja) ? row.pekerja : (row.pekerja ? [row.pekerja] : [])
+        ...row,
+        pekerja: row.pekerja || [] // langsung objek pekerja biar multiselect muncul nama
       }
       this.showModal('editModal')
     },
     async submitEdit() {
       try {
         const payload = {
-          ...this.editForm,
-          id_pekerja: this.editForm.id_pekerja.map(p => p.id_pekerja)
+          nama_blok: this.editForm.nama_blok,
+          waktu_tanam: this.editForm.waktu_tanam,
+          waktu_panen: this.editForm.waktu_panen,
+          id_pekerja: this.editForm.pekerja.map(p => p.id_pekerja)
         }
         await axios.put(`/blok/${this.editForm.id_blok}`, payload)
+        this.fetchBlok()
         this.hideModal('editModal')
-        await this.fetchBloks()
         alert('Data berhasil diperbarui')
-      } catch (error) {
-        console.error('Gagal mengedit data:', error)
+      } catch (err) {
+        console.error('Gagal update data blok:', err)
         alert('Gagal memperbarui data')
       }
     },
-    async deleteBlok(row) {
-      if (confirm(`Yakin ingin menghapus blok: ${row.nama_blok}?`)) {
-        try {
-          await axios.delete(`/blok/${row.id_blok}`)
-          await this.fetchBloks()
-          alert('Data berhasil dihapus')
-        } catch (error) {
-          console.error('Gagal menghapus blok:', error)
-          alert('Gagal menghapus data')
-        }
-      }
-    },
     resetForm() {
-      this.form = {
-        nama_blok: '',
-        lokasi: '',
-        waktu_tanam: '',
-        waktu_panen: '',
-        id_peta: '',
-        id_pekerja: []
-      }
+      this.form = { kode_unik: '', lokasi: '', nama_blok: '', waktu_tanam: '', waktu_panen: '', pekerja: [] }
     },
     showModal(id) {
       const modalEl = document.getElementById(id)
@@ -267,12 +306,23 @@ export default {
       if (!modal) modal = new window.bootstrap.Modal(modalEl)
       modal.hide()
     },
+    async deleteBlok(row) {
+      if (!confirm(`Yakin hapus data blok dengan kode ${row.kode_unik}?`)) return
+      try {
+        await axios.delete(`/blok/${row.id_blok}`)
+        this.fetchBlok()
+        alert('Data berhasil dihapus')
+      } catch (err) {
+        console.error('Gagal hapus data blok:', err)
+        alert('Gagal menghapus data')
+      }
+    },
     exportCSV() {
-      let csv = 'ID,Nama Blok,Waktu Tanam,Waktu Panen,Tanggal Upload Peta,Nama Pekerja\n'
-      this.bloks.forEach(b => {
-        const tanggalUpload = b.upload_peta?.tanggal_upload || ''
-        const pekerjaStr = b.pekerja?.map(p => p.nama).join(', ') || ''
-        csv += `${b.id_blok},"${b.nama_blok}",${b.waktu_tanam},${b.waktu_panen},${tanggalUpload},"${pekerjaStr}"\n`
+      let csv = 'ID,Kode Unik,Nama Blok,Waktu Tanam,Waktu Panen,Lokasi,Pekerja,Tanggal Buat\n'
+      this.blokList.forEach(item => {
+        const tanggal = this.formatTanggal(item.created_at)
+        const pekerjaStr = item.pekerja ? item.pekerja.map(p => p.nama).join('; ') : ''
+        csv += `${item.id_blok},"${item.kode_unik}","${item.nama_blok || ''}",${item.waktu_tanam || ''},${item.waktu_panen || ''},"${item.lokasi || ''}","${pekerjaStr}","${tanggal}"\n`
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)

@@ -1,51 +1,31 @@
 <template>
-  <l-geo-json
-    v-if="jalanGeojson"
-    :geojson="jalanGeojson"
-    layer-type="overlay"
-    name="Jalan"
-    :options-style="() => ({})"
-    @add="onJalanLayerAdd"
-  />
+  <l-layer-group layer-type="overlay" name="Jalan">
+    <LGeoJson
+      v-if="jalanGeojson"
+      :geojson="jalanGeojson"
+      :options-style="() => ({})"
+      @ready="onGeoJsonReady"
+    />
+  </l-layer-group>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
-import { LGeoJson } from "@vue-leaflet/vue-leaflet"
+import { ref, watch, nextTick } from "vue"
+import { LGeoJson, LLayerGroup } from "@vue-leaflet/vue-leaflet"
 import L from "leaflet"
 import axios from "@/axios"
 
-const jalanGeojson = ref(null)
-
-const formatTanggal = (t) => {
-  if (!t) return "-"
-  return new Date(t).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  })
-}
-
-onMounted(async () => {
-  const response = await axios.get("/jalan")
-  const data = response.data
-  jalanGeojson.value = {
-    type: "FeatureCollection",
-    features: (Array.isArray(data) ? data : [data]).map(item => {
-      if (!item.lokasi_geojson?.coordinates) return null
-      return {
-        type: "Feature",
-        geometry: item.lokasi_geojson,
-        properties: {
-          id_jalan: item.id_jalan,
-          kondisi: item.kondisi,
-          lebar: item.lebar,
-          tanggal_upload: formatTanggal(item.upload_peta?.tanggal_upload)
-        }
-      }
-    }).filter(Boolean)
-  }
+const props = defineProps({
+  selectedDate: { type: String, required: true }
 })
+
+const jalanGeojson = ref(null)
+let geojsonLayerRef = null
+
+const formatTanggal = (t) =>
+  t
+    ? new Date(t).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+    : "-"
 
 const getMainlineColor = (lebar) => {
   if (lebar >= 6) return "#000000"  // hitam
@@ -53,12 +33,64 @@ const getMainlineColor = (lebar) => {
   return "#AAAAAA"                  // abu muda
 }
 
-const onJalanLayerAdd = (e) => {
-  const geojsonLayer = e.target
-  geojsonLayer.clearLayers()
+const fetchJalan = async (tanggal) => {
+  try {
+    const res = await axios.get(`/jalan/by-date?tanggal=${tanggal}`)
+    const data = res.data
+
+    jalanGeojson.value = {
+      type: "FeatureCollection",
+      features: (Array.isArray(data) ? data : [data])
+        .map(item => {
+          if (!item.lokasi_geojson) return null
+          let geometry
+          try {
+            geometry = typeof item.lokasi_geojson === "string"
+              ? JSON.parse(item.lokasi_geojson)
+              : item.lokasi_geojson
+          } catch (err) {
+            console.error("Gagal parse lokasi_geojson:", err)
+            return null
+          }
+          return {
+            type: "Feature",
+            geometry,
+            properties: {
+              id_jalan: item.id_jalan,
+              kondisi: item.kondisi,
+              lebar: item.lebar,
+              tanggal_upload: formatTanggal(item.upload_peta?.tanggal_upload)
+            }
+          }
+        })
+        .filter(Boolean)
+    }
+
+    await nextTick()
+    bindEvents()
+  } catch (err) {
+    console.error("Gagal ambil data jalan:", err)
+  }
+}
+
+watch(
+  () => props.selectedDate,
+  (newDate) => {
+    if (newDate) fetchJalan(newDate)
+  },
+  { immediate: true }
+)
+
+const onGeoJsonReady = (geojsonLayer) => {
+  geojsonLayerRef = geojsonLayer
+  bindEvents()
+}
+
+const bindEvents = () => {
+  if (!geojsonLayerRef) return
+  geojsonLayerRef.clearLayers()
 
   jalanGeojson.value.features.forEach(feature => {
-    if (!feature.geometry?.coordinates) return
     const props = feature.properties
     const popupContent = `
       <div>
@@ -83,27 +115,18 @@ const onJalanLayerAdd = (e) => {
         weight: 3
       },
       onEachFeature: (f, layer) => {
-        layer.on("click", () => {
-          layer.bindPopup(popupContent).openPopup()
-        })
+        layer.bindPopup(popupContent)
 
-        // Highlight saat hover
-        layer.on("mouseover", () => {
-          layer.setStyle({
-            weight: 5,
-            color: "#ffffff"  // atau warna lain untuk efek highlight
-          })
+        layer.on("mouseover", function () {
+          this.setStyle({ weight: 5, color: "#ffffff" })
         })
-        layer.on("mouseout", () => {
-          layer.setStyle({
-            weight: 3,
-            color: getMainlineColor(props.lebar)
-          })
+        layer.on("mouseout", function () {
+          this.setStyle({ weight: 3, color: getMainlineColor(props.lebar) })
         })
       }
     })
 
-    L.layerGroup([outline, mainLine]).addTo(geojsonLayer)
+    L.layerGroup([outline, mainLine]).addTo(geojsonLayerRef)
   })
 }
 </script>
