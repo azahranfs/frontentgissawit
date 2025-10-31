@@ -46,6 +46,12 @@
               <div class="mb-3">
                 <input v-model="form.varietas" type="text" class="form-control" placeholder="Varietas (opsional)" />
               </div>
+              <div class="mb-3">
+                <select v-model="form.zona" class="form-select" required>
+                  <option disabled value="">-- Pilih Zona --</option>
+                  <option v-for="n in 7" :key="n" :value="`Zona ${n}`">Zona {{ n }}</option>
+                </select>
+              </div>
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -75,6 +81,12 @@
               <div class="mb-3">
                 <input v-model="editForm.varietas" type="text" class="form-control" placeholder="Varietas" />
               </div>
+              <div class="mb-3">
+                <select v-model="editForm.zona" class="form-select" required>
+                  <option disabled value="">-- Pilih Zona --</option>
+                  <option v-for="n in 7" :key="n" :value="`Zona ${n}`">Zona {{ n }}</option>
+                </select>
+              </div>
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -99,22 +111,25 @@ export default {
     return {
       pohonList: [],
       columns: [
-        { label: 'ID Pohon', field: 'id_pohon', sortable: true },
+        { label: 'ID Pohon', field: 'id_pohon', type: 'number', sortable: true },
         { label: 'Longitude', field: 'longitude' },
         { label: 'Latitude', field: 'latitude' },
         { label: 'Varietas', field: 'varietas' },
+        { label: 'Zona', field: 'zona' },
         { label: 'Aksi', field: 'aksi' }
       ],
       form: {
         longitude: null,
         latitude: null,
-        varietas: ''
+        varietas: '',
+        zona: ''
       },
       editForm: {
         id_pohon: null,
         longitude: null,
         latitude: null,
-        varietas: ''
+        varietas: '',
+        zona: ''
       }
     }
   },
@@ -148,7 +163,8 @@ export default {
         id_pohon: row.id_pohon,
         longitude: row.longitude,
         latitude: row.latitude,
-        varietas: row.varietas
+        varietas: row.varietas,
+        zona: row.zona
       }
       this.showModal('editModal')
     },
@@ -179,7 +195,8 @@ export default {
       this.form = {
         longitude: null,
         latitude: null,
-        varietas: ''
+        varietas: '',
+        zona: ''
       }
     },
     showModal(id) {
@@ -195,9 +212,9 @@ export default {
       modal.hide()
     },
     exportCSV() {
-      let csv = 'ID Pohon, Longitude, Latitude, Varietas\n'
+      let csv = 'ID Pohon,Longitude,Latitude,Varietas,Zona\n'
       this.pohonList.forEach(item => {
-        csv += `${item.id_pohon},${item.longitude},${item.latitude},"${item.varietas ?? ''}"\n`
+        csv += `${item.id_pohon},${item.longitude},${item.latitude},"${item.varietas ?? ''}","${item.zona ?? ''}"\n`
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
@@ -211,6 +228,7 @@ export default {
   }
 }
 </script>
+
 <style>
 .vgt-table {
   border-collapse: collapse !important;

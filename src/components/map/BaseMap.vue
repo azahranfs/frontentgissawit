@@ -160,10 +160,10 @@ function onMapReady(m) {
 <style scoped>
 #legend {
   position: absolute;
-  top: 250px;
-  right: 10px;
-  z-index: 1000;
-  pointer-events: auto;
+  top: 120px;
+  left: 10px;
+  z-index: 400; /* lebih kecil dari layer control */
+  pointer-events: none; /* nonaktifkan event di seluruh area legend */
 }
 
 .info.legend {
@@ -171,12 +171,12 @@ function onMapReady(m) {
   padding: 10px;
   font-size: 13px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  border-radius: 5px;
+  border-radius: 8px;
   line-height: 20px;
-  min-width: 160px;
-  max-height: 220px;
+  width: 220px;
+  max-height: 250px;
   overflow-y: auto;
-  pointer-events: auto;
+  pointer-events: auto; /* aktifkan klik hanya di dalam kotak legend */
 }
 
 .info.legend i {

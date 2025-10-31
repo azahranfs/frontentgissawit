@@ -30,9 +30,6 @@
 
           <button type="submit">Submit</button>
 
-          <div class="login-links">
-            <a href="#">Forgot password?</a><br />
-          </div>
         </form>
       </div>
     </div>

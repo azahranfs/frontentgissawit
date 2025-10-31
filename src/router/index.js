@@ -28,15 +28,16 @@ const routes = [
   {
     path: '/admin',
     component: AdminLayout,
+    meta: { requiresAuth: true, role: 'admin' }, // 🔒 proteksi seluruh grup admin
     children: [
       {
-        path: '', // -> /admin
+        path: '',
         name: 'DashboardHome',
         component: DashboardHome
       },
       {
-        path: 'upload-peta', 
-        name: 'UploadPeta.vue',
+        path: 'upload-peta',
+        name: 'UploadPeta',
         component: UploadPeta
       },
       {
@@ -94,12 +95,14 @@ const routes = [
   {
     path: '/homestaff',
     name: 'HomeStaff',
-    component: HomeStaff
+    component: HomeStaff,
+    meta: { requiresAuth: true, role: 'staff' } // 🔒 proteksi halaman staf juga
   },
   {
     path: '/peta',
     name: 'MapView',
-    component: () => import('@/views/MapView.vue')
+    component: () => import('@/views/MapView.vue'),
+    meta: { requiresAuth: true } // boleh diakses siapa pun yg login
   }
 ]
 
@@ -108,19 +111,23 @@ const router = createRouter({
   routes
 })
 
+// ✅ Route Guard
 router.beforeEach((to, from, next) => {
-  const isLoggedIn = !!localStorage.getItem('token')
+  const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role')
 
-  if (to.meta.requiresAuth && !isLoggedIn) {
+  if (to.meta.requiresAuth && !token) {
+    // belum login → balik ke login
     next('/login')
-  } else if (to.path === '/login' && isLoggedIn) {
-    // Cegah user masuk login kalau sudah login
-    const role = localStorage.getItem('role')
-    if (role === 'admin') {
-      next('/admin')
-    } else {
-      next('/homestaff')
-    }
+  } else if (to.meta.role && to.meta.role !== role) {
+    // role salah → redirect sesuai role user
+    if (role === 'admin') next('/admin')
+    else if (role === 'staf') next('/homestaff')
+    else next('/login')
+  } else if (to.path === '/login' && token) {
+    // kalau sudah login, cegah masuk ke halaman login lagi
+    if (role === 'admin') next('/admin')
+    else next('/homestaff')
   } else {
     next()
   }

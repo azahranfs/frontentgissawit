@@ -1,4 +1,4 @@
-<template> 
+<template>
   <div class="dashboard-home">
     <!-- Kotak statistik -->
     <div class="row mb-4">
@@ -11,7 +11,7 @@
       <div class="col-md-4">
         <div class="stat-box bg-primary text-white">
           <h4>Luas Lahan</h4>
-          <p>{{ luasLahan }} Ha</p>
+          <p>{{ luasLahan.toLocaleString('id-ID') }} m2</p>
         </div>
       </div>
       <div class="col-md-4">
@@ -26,8 +26,10 @@
     <div class="map-container position-relative text-center">
       <img src="@/assets/image/peta.png" alt="Peta" class="img-fluid rounded shadow" />
       <router-link to="/peta">
-        <button class="map-button btn btn-outline-light position-absolute top-50 start-50 translate-middle">
-          Click Here ⤵
+        <button
+          class="map-button btn btn-outline-light position-absolute top-50 start-50 translate-middle"
+        >
+          Lihat Peta ⤵
         </button>
       </router-link>
     </div>
@@ -35,15 +37,36 @@
 </template>
 
 <script>
+import axios from'@/axios'
+
 export default {
   data() {
     return {
-      jumlahPohon: 70.127,
-      luasLahan: 8334589.1,
-      jumlahPekerja: 120
+      jumlahPohon: 0,
+      luasLahan: 0,
+      jumlahPekerja: 0,
+    };
+  },
+  async mounted() {
+    try {
+      // Ambil data pohon
+      const pohonRes = await axios.get("http://localhost:8000/api/pohon");
+      this.jumlahPohon = pohonRes.data.length;
+
+      // Ambil data lahan dan jumlahkan luas
+      const lahanRes = await axios.get("http://localhost:8000/api/lahan");
+      this.luasLahan = lahanRes.data.reduce((total, item) => {
+        return total + (parseFloat(item.luas) || 0);
+      }, 0);
+
+      // Ambil data pekerja
+      const pekerjaRes = await axios.get("http://localhost:8000/api/pekerja");
+      this.jumlahPekerja = pekerjaRes.data.length;
+    } catch (error) {
+      console.error("Gagal memuat data dashboard:", error);
     }
-  }
-}
+  },
+};
 </script>
 
 <style scoped>

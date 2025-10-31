@@ -1,12 +1,15 @@
 <template>
   <div class="data-zona-page">
+    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2>Data Zona</h2>
-      <div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-success" @click="openAddModal">+ Add Data</button>
         <button class="btn btn-primary" @click="exportCSV">Export CSV</button>
       </div>
     </div>
 
+    <!-- TABEL -->
     <vue-good-table
       :columns="columns"
       :rows="zonaList"
@@ -16,11 +19,11 @@
       <template #table-row="props">
         <!-- kolom aksi -->
         <span v-if="props.column.field === 'aksi'" class="d-flex gap-2">
-            <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Data</button>
-            <button class="btn btn-sm btn-outline-secondary" @click="editBlok(props.row)">✎ Edit</button>
-            <button class="btn btn-sm btn-danger" @click="deleteBlok(props.row)">🗑 Hapus</button>
+          <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Record Data</button>
+          <button class="btn btn-sm btn-outline-secondary" @click="editZona(props.row)">✎ Edit</button>
+          <button class="btn btn-sm btn-danger" @click="deleteZona(props.row)">🗑 Hapus</button>
         </span>
-        
+
         <!-- tampilkan potongan lokasi_zona_wkb -->
         <span v-else-if="props.column.field === 'lokasi_zona_wkb'">
           {{ props.row.lokasi_zona_wkb ? props.row.lokasi_zona_wkb.substring(0, 40) + '...' : '-' }}
@@ -38,34 +41,55 @@
       </template>
     </vue-good-table>
 
-    <!-- MODAL TAMBAH -->
+    <!-- MODAL ADD -->
     <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <form @submit.prevent="submitForm">
             <div class="modal-header">
-              <h5 class="modal-title">Tambah Data Zona</h5>
+              <h5 class="modal-title">
+                {{ isAddFromRow ? 'Tambah Data Zona (Dari Record Lama)' : 'Tambah Data Zona Baru' }}
+              </h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-              <!-- readonly kode_unik -->
+              <!-- Kode Unik -->
               <div class="mb-3">
                 <label class="form-label">Kode Unik</label>
-                <input v-model="form.kode_unik" type="text" class="form-control" readonly />
+                <input
+                  v-model="form.kode_unik"
+                  type="text"
+                  class="form-control"
+                  :readonly="isAddFromRow"
+                  placeholder="Kode Unik"
+                />
               </div>
 
-              <!-- readonly lokasi_zona_wkb -->
+              <!-- Lokasi WKB -->
               <div class="mb-3">
                 <label class="form-label">Lokasi (WKB)</label>
-                <textarea v-model="form.lokasi_zona_wkb" class="form-control" rows="3" readonly></textarea>
+                <textarea
+                  v-model="form.lokasi_zona_wkb"
+                  class="form-control"
+                  rows="3"
+                  :readonly="isAddFromRow"
+                ></textarea>
               </div>
 
               <div class="row">
                 <div class="col-md-6 mb-3">
+                  <label class="form-label">Nama Zona</label>
                   <input v-model="form.nama_zona" type="text" class="form-control" placeholder="Nama Zona" />
                 </div>
                 <div class="col-md-6 mb-3">
-                  <input v-model.number="form.jumlah" type="number" step="1" class="form-control" placeholder="Jumlah" />
+                  <label class="form-label">Jumlah</label>
+                  <input
+                    v-model.number="form.jumlah"
+                    type="number"
+                    step="1"
+                    class="form-control"
+                    placeholder="Jumlah"
+                  />
                 </div>
               </div>
             </div>
@@ -90,7 +114,7 @@
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label">Kode Unik</label>
-                <input v-model="form.kode_unik" type="text" class="form-control" readonly />
+                <input v-model="editForm.kode_unik" type="text" class="form-control" readonly />
               </div>
 
               <div class="mb-3">
@@ -105,7 +129,13 @@
                 </div>
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Jumlah</label>
-                  <input v-model.number="editForm.jumlah" type="number" step="1" class="form-control" placeholder="Jumlah" />
+                  <input
+                    v-model.number="editForm.jumlah"
+                    type="number"
+                    step="1"
+                    class="form-control"
+                    placeholder="Jumlah"
+                  />
                 </div>
               </div>
             </div>
@@ -132,7 +162,7 @@ export default {
     return {
       zonaList: [],
       columns: [
-        { label: 'ID', field: 'id_zona', sortable: true },
+        { label: 'ID', field: 'id_zona', type: 'number', sortable: true },
         { label: 'Kode Unik', field: 'kode_unik' },
         { label: 'Nama Zona', field: 'nama_zona' },
         { label: 'Jumlah', field: 'jumlah' },
@@ -148,10 +178,12 @@ export default {
       },
       editForm: {
         id_zona: null,
+        kode_unik: '',
         lokasi_zona_wkb: '',
         nama_zona: '',
         jumlah: null
-      }
+      },
+      isAddFromRow: false
     }
   },
   mounted() {
@@ -171,14 +203,20 @@ export default {
         console.error('Gagal ambil data zona:', err)
       }
     },
+    openAddModal() {
+      this.resetForm()
+      this.isAddFromRow = false
+      this.showModal('addModal')
+    },
     addFromRow(row) {
+      this.isAddFromRow = true
       this.form = {
         kode_unik: row.kode_unik,
         lokasi_zona_wkb: row.lokasi_zona_wkb,
-        nama_zona: '',
-        jumlah: null
+        nama_zona: row.nama_zona || '',
+        jumlah: row.jumlah || null
       }
-      this.showModal('addModal')
+      this.$nextTick(() => this.showModal('addModal'))
     },
     async submitForm() {
       try {
@@ -201,6 +239,7 @@ export default {
     editZona(row) {
       this.editForm = {
         id_zona: row.id_zona,
+        kode_unik: row.kode_unik,
         lokasi_zona_wkb: row.lokasi_zona_wkb,
         nama_zona: row.nama_zona,
         jumlah: row.jumlah

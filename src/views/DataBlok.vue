@@ -2,7 +2,11 @@
   <div class="data-blok-page">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2>Data Blok</h2>
-      <div>
+      <div class="d-flex gap-2">
+        <!-- 🔹 Tombol Add Data Utama -->
+        <button class="btn btn-success" @click="openAddManual">
+          + Add Data
+        </button>
         <button class="btn btn-primary" @click="exportCSV">Export CSV</button>
       </div>
     </div>
@@ -16,7 +20,7 @@
       <template #table-row="props">
         <!-- kolom aksi -->
         <span v-if="props.column.field === 'aksi'" class="d-flex gap-2">
-          <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Data</button>
+          <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Record Data</button>
           <button class="btn btn-sm btn-outline-secondary" @click="editBlok(props.row)">✎ Edit</button>
           <button class="btn btn-sm btn-danger" @click="deleteBlok(props.row)">🗑 Hapus</button>
         </span>
@@ -59,12 +63,12 @@
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label">Kode Unik</label>
-                <input v-model="form.kode_unik" type="text" class="form-control" readonly />
+                <input v-model="form.kode_unik" type="text" class="form-control"/>
               </div>
 
               <div class="mb-3">
                 <label class="form-label">Lokasi (WKB)</label>
-                <textarea v-model="form.lokasi" class="form-control" rows="3" readonly></textarea>
+                <textarea v-model="form.lokasi" class="form-control" rows="3"></textarea>
               </div>
 
               <div class="row">
@@ -185,7 +189,7 @@ export default {
       blokList: [],
       pekerjaList: [],
       columns: [
-        { label: 'ID', field: 'id_blok', sortable: true },
+        { label: 'ID', field: 'id_blok', type: 'number', sortable: true },
         { label: 'Kode Unik', field: 'kode_unik' },
         { label: 'Nama Blok', field: 'nama_blok' },
         { label: 'Waktu Tanam', field: 'waktu_tanam' },
@@ -240,6 +244,12 @@ export default {
         console.error('Gagal ambil data pekerja:', err)
       }
     },
+    // 🔹 tombol Add Data manual
+    openAddManual() {
+      this.resetForm()
+      this.showModal('addModal')
+    },
+    // 🔹 add dari baris (lokasi sudah ada)
     addFromRow(row) {
       this.form = {
         kode_unik: row.kode_unik,
@@ -255,7 +265,7 @@ export default {
       try {
         const payload = {
           ...this.form,
-          id_pekerja: this.form.pekerja.map(p => p.id_pekerja) // hanya kirim ID
+          id_pekerja: this.form.pekerja.map(p => p.id_pekerja)
         }
         await axios.post('/blok', payload)
         this.fetchBlok()
@@ -268,10 +278,7 @@ export default {
       }
     },
     editBlok(row) {
-      this.editForm = {
-        ...row,
-        pekerja: row.pekerja || [] // langsung objek pekerja biar multiselect muncul nama
-      }
+      this.editForm = { ...row, pekerja: row.pekerja || [] }
       this.showModal('editModal')
     },
     async submitEdit() {

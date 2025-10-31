@@ -1,12 +1,15 @@
 <template>
   <div class="data-jalan-page">
+    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2>Data Jalan</h2>
-      <div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-success" @click="openAddModal">+ Add Data</button>
         <button class="btn btn-primary" @click="exportCSV">Export CSV</button>
       </div>
     </div>
 
+    <!-- TABEL -->
     <vue-good-table
       :columns="columns"
       :rows="jalanList"
@@ -14,57 +17,55 @@
       :pagination-options="{ enabled: true, perPage: 5 }"
     >
       <template #table-row="props">
-        <!-- kolom aksi -->
         <span v-if="props.column.field === 'aksi'" class="d-flex gap-2">
-          <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Data</button>
-          <button class="btn btn-sm btn-outline-secondary" @click="editBlok(props.row)">✎ Edit</button>
-          <button class="btn btn-sm btn-danger" @click="deleteBlok(props.row)">🗑 Hapus</button>
+          <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Record Data</button>
+          <button class="btn btn-sm btn-outline-secondary" @click="editJalan(props.row)">✎ Edit</button>
+          <button class="btn btn-sm btn-danger" @click="deleteJalan(props.row)">🗑 Hapus</button>
         </span>
 
-        <!-- tampilkan potongan lokasi_wkb -->
         <span v-else-if="props.column.field === 'lokasi_wkb'">
           {{ props.row.lokasi_wkb ? props.row.lokasi_wkb.substring(0, 40) + '...' : '-' }}
         </span>
 
-        <!-- format tanggal created_at -->
         <span v-else-if="props.column.field === 'created_at'">
           {{ formatTanggal(props.row.created_at) }}
         </span>
 
-        <!-- default -->
         <span v-else>
           {{ props.formattedRow[props.column.field] }}
         </span>
       </template>
     </vue-good-table>
 
-    <!-- MODAL TAMBAH -->
+    <!-- MODAL ADD -->
     <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <form @submit.prevent="submitForm">
             <div class="modal-header">
-              <h5 class="modal-title">Tambah Data Jalan</h5>
+              <h5 class="modal-title">
+                {{ isAddFromRow ? 'Tambah Data Jalan (Dari Record Lama)' : 'Tambah Data Jalan Baru' }}
+              </h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-              <!-- readonly kode_unik -->
               <div class="mb-3">
                 <label class="form-label">Kode Unik</label>
-                <input v-model="form.kode_unik" type="text" class="form-control" readonly />
+                <input v-model="form.kode_unik" type="text" class="form-control" :readonly="isAddFromRow" />
               </div>
 
-              <!-- readonly lokasi_wkb -->
               <div class="mb-3">
                 <label class="form-label">Lokasi (WKB)</label>
-                <textarea v-model="form.lokasi_wkb" class="form-control" rows="3" readonly></textarea>
+                <textarea v-model="form.lokasi_wkb" class="form-control" rows="3" :readonly="isAddFromRow"></textarea>
               </div>
 
               <div class="row">
                 <div class="col-md-6 mb-3">
+                  <label class="form-label">Kondisi</label>
                   <input v-model="form.kondisi" type="text" class="form-control" placeholder="Kondisi" />
                 </div>
                 <div class="col-md-6 mb-3">
+                  <label class="form-label">Lebar (m)</label>
                   <input v-model.number="form.lebar" type="number" step="0.01" class="form-control" placeholder="Lebar (m)" />
                 </div>
               </div>
@@ -88,9 +89,8 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-              <!-- LOKASI WKB: readonly -->
               <div class="mb-3">
-                <label class="form-label">Lokasi (WKT)</label>
+                <label class="form-label">Lokasi (WKB)</label>
                 <textarea v-model="editForm.lokasi_wkb" class="form-control" rows="3" readonly></textarea>
               </div>
 
@@ -128,7 +128,7 @@ export default {
     return {
       jalanList: [],
       columns: [
-        { label: 'ID', field: 'id_jalan', sortable: true },
+        { label: 'ID', field: 'id_jalan', type: 'number', sortable: true },
         { label: 'Kode Unik', field: 'kode_unik' },
         { label: 'Kondisi', field: 'kondisi' },
         { label: 'Lebar (m)', field: 'lebar' },
@@ -136,18 +136,9 @@ export default {
         { label: 'Tanggal Buat', field: 'created_at' },
         { label: 'Aksi', field: 'aksi' }
       ],
-      form: {
-        kode_unik: '',
-        lokasi_wkb: '',
-        kondisi: '',
-        lebar: null
-      },
-      editForm: {
-        id_jalan: null,
-        lokasi_wkb: '',
-        kondisi: '',
-        lebar: null
-      }
+      form: { kode_unik: '', lokasi_wkb: '', kondisi: '', lebar: null },
+      editForm: { id_jalan: null, lokasi_wkb: '', kondisi: '', lebar: null },
+      isAddFromRow: false
     }
   },
   mounted() {
@@ -167,14 +158,20 @@ export default {
         console.error('Gagal ambil data jalan:', err)
       }
     },
-    addFromRow(row) {
-      this.form = {
-        kode_unik: row.kode_unik,
-        lokasi_wkb: row.lokasi_wkb,
-        kondisi: '',
-        lebar: null
-      }
+    openAddModal() {
+      this.resetForm()
+      this.isAddFromRow = false
       this.showModal('addModal')
+    },
+    addFromRow(row) {
+      this.isAddFromRow = true
+      this.form = {
+        kode_unik: row.kode_unik || '',
+        lokasi_wkb: row.lokasi_wkb || '',
+        kondisi: row.kondisi || '',
+        lebar: row.lebar || null
+      }
+      this.$nextTick(() => this.showModal('addModal'))
     },
     async submitForm() {
       try {
@@ -233,19 +230,17 @@ export default {
       if (!modal) modal = new window.bootstrap.Modal(modalEl)
       modal.hide()
     },
-    
-  async deleteJalan(row) {
-    if (!confirm(`Yakin hapus data jalan dengan kode ${row.kode_unik}?`)) return
-    try {
-      await axios.delete(`/jalan/${row.id_jalan}`)
-      this.fetchJalan()
-      alert('Data berhasil dihapus')
-    } catch (err) {
-      console.error('Gagal hapus data jalan:', err)
-      alert('Gagal menghapus data')
-    }
-  },
-  
+    async deleteJalan(row) {
+      if (!confirm(`Yakin hapus data jalan dengan kode ${row.kode_unik}?`)) return
+      try {
+        await axios.delete(`/jalan/${row.id_jalan}`)
+        this.fetchJalan()
+        alert('Data berhasil dihapus')
+      } catch (err) {
+        console.error('Gagal hapus data jalan:', err)
+        alert('Gagal menghapus data')
+      }
+    },
     exportCSV() {
       let csv = 'ID,Kode Unik,Kondisi,Lebar,Lokasi WKB,Tanggal Buat\n'
       this.jalanList.forEach(item => {

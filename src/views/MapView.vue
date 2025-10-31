@@ -1,7 +1,7 @@
 <template>
   <div class="mapview-page">
     <div class="mapview-header">
-      <h2>Halaman MapView</h2>
+      <h2>Peta Kebun Sawit</h2>
     </div>
     <BaseMap />
   </div>

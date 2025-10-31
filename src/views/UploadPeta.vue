@@ -135,7 +135,7 @@ export default {
     return {
       petaList: [],
       columns: [
-        { label: 'ID', field: 'id_peta', sortable: true },
+        { label: 'ID', field: 'id_peta', type: 'number', sortable: true },
         { label: 'Nama Peta', field: 'nama_peta', sortable: true },
         { label: 'Tanggal Upload', field: 'uploaded_at', sortable: true },
         { label: 'Uploader', field: 'uploader', sortable: true },

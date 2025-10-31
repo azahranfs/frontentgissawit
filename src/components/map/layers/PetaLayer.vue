@@ -99,9 +99,12 @@ const fetchPeta = async (tanggal) => {
 }
 
 onMounted(() => {
-  if (props.date) fetchPeta(props.date)
+  if (props.date) {
+    setTimeout(() => {
+      fetchPeta(props.date)
+    }, 7000)
+  }
 })
-
 watch(() => props.date, (newDate) => {
   if (newDate) fetchPeta(newDate)
 })

@@ -148,7 +148,7 @@ export default {
       },
       editId: null,
       columns: [
-        { label: 'ID', field: 'id_alat' },
+        { label: 'ID', field: 'id_alat', type: 'number' },
         { label: 'Nama Alat', field: 'nama_alat' },
         { label: 'Penggunaan', field: 'penggunaan' },
         { label: 'Tanggal', field: 'tanggal' },

@@ -7,7 +7,7 @@
           <i class="fas fa-bars"></i>
         </button>
         <img src="@/assets/image/logo.png" alt="Logo" class="logo-icon" />
-        <span class="page-title">WebGIS Admin : {{ pageTitle }}</span>
+        <span class="page-title">WebGIS Manajer Kebun : {{ pageTitle }}</span>
       </div>
       <button class="logout-btn" @click="logout">Logout</button>
     </header>
@@ -18,7 +18,7 @@
       <aside :class="['sidebar', { collapsed: isSidebarCollapsed }]">
         <div class="sidebar-profile" v-if="!isSidebarCollapsed">
           <img src="@/assets/image/user.png" alt="Admin Avatar" class="avatar-img" />
-          <div class="admin-name">Admin: Nama Admin</div>
+          <div class="admin-name">Manajer Kebun: {{ adminName || 'Loading...' }}</div>
         </div>
 
         <nav>
@@ -77,7 +77,9 @@ export default {
       menuOpen: {
         data: true,
         user: false,
-      }
+      },
+      isSidebarCollapsed: false,
+      adminName: null, // ✅ tambahkan ini
     }
   },
   computed: {
@@ -88,12 +90,36 @@ export default {
       if (path.includes('data-irigasi')) return 'Data Irigasi'
       if (path.includes('data-jalan')) return 'Data Jalan'
       if (path.includes('user')) return 'Management User'
-      return 'Dashboard Admin'
+      return 'Dashboard Manajer Kebun'
     }
+  },
+  mounted() {
+    this.getAdminName() // ✅ ambil nama admin saat mount
   },
   methods: {
     toggleMenu(menu) {
       this.menuOpen[menu] = !this.menuOpen[menu]
+    },
+    toggleSidebar() {
+      this.isSidebarCollapsed = !this.isSidebarCollapsed
+    },
+    async getAdminName() {
+      try {
+        // cek dulu localStorage
+        const storedName = localStorage.getItem('user_name')
+        if (storedName) {
+          this.adminName = storedName
+          return
+        }
+
+        // kalau belum ada, ambil dari API login
+        const res = await axios.get('/login')
+        this.adminName = res.data?.name || 'Admin'
+        localStorage.setItem('user_name', this.adminName)
+      } catch (error) {
+        console.error('Gagal ambil nama admin:', error)
+        this.adminName = 'Admin'
+      }
     },
     async logout() {
       try {
@@ -106,7 +132,6 @@ export default {
           alert('Terjadi kesalahan saat logout')
         }
       } finally {
-        // Hapus data dari localStorage dan arahkan ke login
         localStorage.removeItem('token')
         localStorage.removeItem('user_name')
         localStorage.removeItem('role')

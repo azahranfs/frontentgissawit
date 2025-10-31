@@ -133,7 +133,7 @@ export default {
     return {
       users: [],
       columns: [
-        { label: 'ID', field: 'id_pekerja', sortable: true },
+        { label: 'ID', field: 'id_pekerja', type: 'number', sortable: true },
         { label: 'Nama', field: 'nama', sortable: true },
         { label: 'Umur', field: 'umur', sortable: true },
         { label: 'Jenis Kelamin', field: 'jenis_kelamin', sortable: false },

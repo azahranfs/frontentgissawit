@@ -260,3 +260,52 @@
   background: none !important;
   opacity: 1 !important;
 }
+
+/* ===== CONTACT SECTION ===== */
+.contact-section {
+  background-color: #002e24;
+  padding: 60px 20px;
+  color: white;
+}
+
+.contact-section h2 {
+  font-size: 2rem;
+  margin-bottom: 30px;
+}
+
+.contact-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+}
+
+.contact-item {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px 30px;
+  border-radius: 12px;
+  text-align: center;
+  transition: background 0.3s ease;
+  min-width: 200px;
+}
+
+.contact-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.contact-item i {
+  font-size: 1.8rem;
+  color: #ffd700;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.contact-item p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.footer {
+  background-color: #001d17;
+  font-size: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}

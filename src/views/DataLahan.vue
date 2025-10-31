@@ -109,7 +109,7 @@ export default {
     return {
       lahanList: [],
       columns: [
-        { label: 'ID', field: 'id_lahan', sortable: true },
+        { label: 'ID', field: 'id_lahan', type: 'number',  sortable: true },
         { label: 'Penggunaan Sebelumnya', field: 'penggunaan_sebelumnya' },
         { label: 'Tahun Perubahan', field: 'tahun_perubahan' },
         { label: 'Tahun Jadi Sawit', field: 'tahun_jadi_sawit' },

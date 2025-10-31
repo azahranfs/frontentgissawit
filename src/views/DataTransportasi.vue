@@ -95,7 +95,7 @@ export default {
     return {
       transportasiList: [],
       columns: [
-        { label: 'ID', field: 'id_transportasi', sortable: true },
+        { label: 'ID', field: 'id_transportasi', type: 'number', sortable: true },
         { label: 'Jenis Transportasi', field: 'jenis_transportasi' },
         { label: 'Kapasitas', field: 'kapasitas' },
         { label: 'Aksi', field: 'aksi' }

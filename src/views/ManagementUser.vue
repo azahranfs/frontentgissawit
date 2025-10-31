@@ -11,10 +11,10 @@
     </div>
 
     <vue-good-table
-        :columns="columns"
-        :rows="users"
-        :search-options="{ enabled: true }"
-        :pagination-options="{ enabled: true, perPage: 5 }"
+      :columns="columns"
+      :rows="users"
+      :search-options="{ enabled: true }"
+      :pagination-options="{ enabled: true, perPage: 5 }"
     >
       <template #table-row="props">
         <span v-if="props.column.field === 'aksi'">
@@ -36,26 +36,34 @@
               <h5 class="modal-title">Tambah Pengguna</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+
             <div class="modal-body">
+              <div v-if="errorMessage" class="alert alert-danger py-2">
+                {{ errorMessage }}
+              </div>
               <div class="row">
                 <div class="col-md-6 mb-3">
                   <input v-model="form.name" type="text" class="form-control" placeholder="Nama" required />
                 </div>
                 <div class="col-md-6 mb-3">
                   <input v-model="form.email" type="email" class="form-control" placeholder="Email" required />
+                  <small v-if="errors.email" class="text-danger">{{ errors.email[0] }}</small>
                 </div>
                 <div class="col-md-6 mb-3">
                   <select v-model="form.role" class="form-control" required>
                     <option disabled value="">Pilih Role</option>
-                    <option value="admin">Admin</option>
-                    <option value="staff">Staff</option>
+                    <option value="admin">admin</option>
+                    <option value="staff">staff</option>
                   </select>
                 </div>
                 <div class="col-md-6 mb-3">
                   <input v-model="form.password" type="password" class="form-control" placeholder="Password" required />
+                  <small class="text-muted">Password minimal 6 karakter</small>
+                  <small v-if="errors.password" class="text-danger">{{ errors.password[0] }}</small>
                 </div>
               </div>
             </div>
+
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
               <button type="submit" class="btn btn-primary">Simpan</button>
@@ -74,13 +82,18 @@
               <h5 class="modal-title">Edit Pengguna</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+
             <div class="modal-body">
+              <div v-if="errorMessage" class="alert alert-danger py-2">
+                {{ errorMessage }}
+              </div>
               <div class="row">
                 <div class="col-md-6 mb-3">
                   <input v-model="editForm.name" type="text" class="form-control" placeholder="Nama" required />
                 </div>
                 <div class="col-md-6 mb-3">
                   <input v-model="editForm.email" type="email" class="form-control" placeholder="Email" required />
+                  <small v-if="errors.email" class="text-danger">{{ errors.email[0] }}</small>
                 </div>
                 <div class="col-md-6 mb-3">
                   <select v-model="editForm.role" class="form-control" required>
@@ -90,10 +103,13 @@
                   </select>
                 </div>
                 <div class="col-md-6 mb-3">
-                  <input v-model="editForm.password" type="password" class="form-control" placeholder="Password"/>
+                  <input v-model="editForm.password" type="password" class="form-control" placeholder="Password" />
+                  <small class="text-muted">Password minimal 6 karakter (opsional saat edit)</small>
+                  <small v-if="errors.password" class="text-danger">{{ errors.password[0] }}</small>
                 </div>
               </div>
             </div>
+
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
               <button type="submit" class="btn btn-primary">Simpan</button>
@@ -112,32 +128,21 @@ import 'vue-good-table-next/dist/vue-good-table-next.css'
 
 export default {
   name: 'DataPengguna',
-  components: {
-    VueGoodTable
-  },
+  components: { VueGoodTable },
   data() {
     return {
       users: [],
       columns: [
-        { label: 'ID', field: 'id', sortable: true },
+        { label: 'ID', field: 'id', type: 'number', sortable: true },
         { label: 'Nama', field: 'name', sortable: true },
         { label: 'Email', field: 'email', sortable: true },
         { label: 'Role', field: 'role', sortable: true },
         { label: 'Aksi', field: 'aksi' }
       ],
-      form: {
-        name: '',
-        email: '',
-        password: '',
-        role: ''
-      },
-      editForm: {
-        id: null,
-        name: '',
-        email: '',
-        role: '',
-        password: ''
-      }
+      form: { name: '', email: '', password: '', role: '' },
+      editForm: { id: null, name: '', email: '', role: '', password: '' },
+      errors: {}, // simpan error field
+      errorMessage: '' // pesan umum dari Laravel
     }
   },
   mounted() {
@@ -152,7 +157,10 @@ export default {
         console.error('Gagal ambil data:', error)
       }
     },
+
     async submitForm() {
+      this.errors = {}
+      this.errorMessage = ''
       try {
         await axios.post('/admin/users', this.form)
         const modalEl = document.getElementById('addModal')
@@ -163,26 +171,19 @@ export default {
         await this.fetchUsers()
         alert('Data berhasil ditambahkan')
       } catch (error) {
+        if (error.response && error.response.status === 422) {
+          this.errors = error.response.data.errors
+          this.errorMessage = error.response.data.message
+        } else {
+          this.errorMessage = 'Terjadi kesalahan saat menambah data.'
+        }
         console.error('Gagal menambah:', error)
-        alert('Gagal menambahkan data')
       }
     },
-    resetForm() {
-      this.form = {
-        name: '',
-        email: '',
-        password: '',
-        role: ''
-      }
-    },
-    editUser(user) {
-      this.editForm = { ...user }
-      const modalEl = document.getElementById('editModal')
-      let modal = window.bootstrap.Modal.getInstance(modalEl)
-      if (!modal) modal = new window.bootstrap.Modal(modalEl)
-      modal.show()
-    },
+
     async submitEdit() {
+      this.errors = {}
+      this.errorMessage = ''
       try {
         await axios.put(`/admin/users/${this.editForm.id}`, this.editForm)
         const modalEl = document.getElementById('editModal')
@@ -192,10 +193,32 @@ export default {
         await this.fetchUsers()
         alert('Data berhasil diperbarui')
       } catch (error) {
-        alert('Gagal memperbarui data')
-        console.error(error)
+        if (error.response && error.response.status === 422) {
+          this.errors = error.response.data.errors
+          this.errorMessage = error.response.data.message
+        } else {
+          this.errorMessage = 'Terjadi kesalahan saat memperbarui data.'
+        }
+        console.error('Gagal memperbarui:', error)
       }
     },
+
+    resetForm() {
+      this.form = { name: '', email: '', password: '', role: '' }
+      this.errors = {}
+      this.errorMessage = ''
+    },
+
+    editUser(user) {
+      this.errors = {}
+      this.errorMessage = ''
+      this.editForm = { ...user, password: '' }
+      const modalEl = document.getElementById('editModal')
+      let modal = window.bootstrap.Modal.getInstance(modalEl)
+      if (!modal) modal = new window.bootstrap.Modal(modalEl)
+      modal.show()
+    },
+
     async deleteUser(user) {
       const confirmDelete = confirm(`Yakin ingin menghapus pengguna ID ${user.id}?`)
       if (confirmDelete) {
@@ -209,6 +232,7 @@ export default {
         }
       }
     },
+
     exportCSV() {
       let csv = 'ID,Nama,Email,Role\n'
       this.users.forEach(u => {
