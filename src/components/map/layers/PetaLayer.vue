@@ -62,20 +62,23 @@ const fetchPeta = async (tanggal) => {
       }
 
       if (format === "tif" || format === "tiff") {
-        const buf = await result.arrayBuffer()
-        const { default: parseGeoraster } = await import("georaster")
-        const { default: GeoRasterLayer } = await import("georaster-layer-for-leaflet")
+      const buf = await result.arrayBuffer()
+      const { default: proj4 } = await import("proj4")
+      window.proj4 = proj4
+      
+      await import("proj4leaflet")
+      const { default: parseGeoraster } = await import("georaster")
+      const { default: GeoRasterLayer } = await import("georaster-layer-for-leaflet")
 
-        const georaster = await parseGeoraster(buf)
+  const georaster = await parseGeoraster(buf)
 
-        layer = new GeoRasterLayer({
-          georaster,
-          opacity: 0.85,
-          resolution: 128,
-          resampleMethod: "bilinear"
-        })
-      }
-
+  layer = new GeoRasterLayer({
+    georaster,
+    opacity: 0.85,
+    resolution: 128,
+    resampleMethod: "bilinear"
+  })
+  }
       if (layer) {
         layer.addTo(props.map)
         props.layerControl.addOverlay(layer, peta.nama_peta || "Upload Peta")
