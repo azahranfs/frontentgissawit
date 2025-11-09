@@ -7,10 +7,14 @@ import { onMounted, watch, ref } from "vue"
 import L from "leaflet"
 import axios from "@/axios"
 
-// 🧩 Tambahkan proj4 di awal supaya tersedia di global scope sebelum library lain
+// 🧩 Pastikan proj4 tersedia di global scope sebelum library georaster dipanggil
 import proj4 from "proj4"
 import "proj4leaflet"
 window.proj4 = proj4
+
+// 🧠 Import statis — bukan dynamic import (fix untuk Netlify build)
+import parseGeoraster from "georaster"
+import GeoRasterLayer from "georaster-layer-for-leaflet"
 
 const props = defineProps({
   map: { type: Object, required: true },
@@ -32,60 +36,51 @@ const fetchPeta = async (tanggal) => {
     petaList.value = res.data
     console.log("✅ API result:", petaList.value)
 
-    // 🧹 Hapus layer lama dari map dan control
+    // 🧹 Bersihkan layer lama
     currentLayers.forEach(layer => {
-      props.map.removeLayer(layer)
-      props.layerControl.removeLayer(layer)
+      try {
+        props.map.removeLayer(layer)
+        props.layerControl.removeLayer(layer)
+      } catch (e) {
+        console.warn("⚠️ Gagal hapus layer lama:", e)
+      }
     })
     currentLayers = []
 
     if (!petaList.value?.length) {
-      console.warn("⚠ No layer found for date:", tanggal)
+      console.warn("⚠ Tidak ada layer untuk tanggal:", tanggal)
       return
     }
 
     for (const peta of petaList.value) {
       const url = peta.link_peta
       const format = peta.format_file?.toLowerCase()
-      console.log("🔗 URL to fetch:", url)
 
-      if (!url) {
-        console.error("❌ link_peta missing:", peta)
-        continue
-      }
+      console.log("🔗 URL to fetch:", url)
+      if (!url) continue
 
       const result = await fetch(url, { cache: "no-store" })
-      console.log("📥 fetch result:", result)
-
       if (!result.ok) {
-        console.error("❌ TIFF failed to load:", result.status)
+        console.error("❌ Gagal fetch file:", result.status)
         continue
       }
 
       let layer = null
 
       if (format === "tif" || format === "tiff") {
-  const buf = await result.arrayBuffer()
-  const parseGeoraster = (await import("georaster")).default
-  const GeoRasterLayerModule = await import("georaster-layer-for-leaflet")
+        const buf = await result.arrayBuffer()
+        const georaster = await parseGeoraster(buf)
 
-  console.log("🧩 GeoRasterLayerModule:", GeoRasterLayerModule)
+        console.log("🌍 GeoRaster parsed:", georaster)
 
-  const GeoRasterLayer =
-    GeoRasterLayerModule.default?.GeoRasterLayer ||
-    GeoRasterLayerModule.GeoRasterLayer ||
-    GeoRasterLayerModule.default
-
-  const georaster = await parseGeoraster(buf)
-
-  layer = new GeoRasterLayer({
-    georaster,
-    opacity: 0.85,
-    resolution: 128,
-    resampleMethod: "bilinear"
-  })
-}
-
+        // 💡 FIX utama — pastikan GeoRasterLayer dikonstruksi langsung
+        layer = new GeoRasterLayer({
+          georaster,
+          opacity: 0.85,
+          resolution: 128,
+          resampleMethod: "bilinear"
+        })
+      }
 
       if (layer) {
         layer.addTo(props.map)
