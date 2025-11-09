@@ -41,8 +41,9 @@ const fetchPeta = async (tanggal) => {
     for (const peta of petaList.value) {
       let url = peta.link_peta
       if (url) {
-        // sesuaikan path publikmu
-        url = url.replace("/storage/peta/", "/peta/")
+        console.log("URL asli:", peta.link_peta)
+        url = peta.link_peta.replace("/storage/peta/", "/peta/")
+        console.log("URL setelah replace:", url)
       }
 
       const format = peta.format_file?.toLowerCase()
