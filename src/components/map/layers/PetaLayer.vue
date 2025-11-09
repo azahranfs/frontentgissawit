@@ -68,10 +68,16 @@ const fetchPeta = async (tanggal) => {
         const buf = await result.arrayBuffer()
 
         // ✅ Import setelah proj4 sudah global
-        const { default: parseGeoraster } = await import("georaster")
-        const { default: GeoRasterLayer } = await import("georaster-layer-for-leaflet")
+        const parseGeoraster = (await import("georaster")).default
+        const GeoRasterLayer = (await import("georaster-layer-for-leaflet")).default?.default || (await import("georaster-layer-for-leaflet")).default
+
 
         const georaster = await parseGeoraster(buf)
+          if (!georaster) {
+          console.error("❌ Georaster failed to parse:", url)
+        continue
+        }
+
 
         layer = new GeoRasterLayer({
           georaster,
