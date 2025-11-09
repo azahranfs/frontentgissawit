@@ -65,27 +65,27 @@ const fetchPeta = async (tanggal) => {
       let layer = null
 
       if (format === "tif" || format === "tiff") {
-        const buf = await result.arrayBuffer()
+  const buf = await result.arrayBuffer()
+  const parseGeoraster = (await import("georaster")).default
+  const GeoRasterLayerModule = await import("georaster-layer-for-leaflet")
 
-        // ✅ Import setelah proj4 sudah global
-        const parseGeoraster = (await import("georaster")).default
-        const GeoRasterLayer = (await import("georaster-layer-for-leaflet")).default?.default || (await import("georaster-layer-for-leaflet")).default
+  console.log("🧩 GeoRasterLayerModule:", GeoRasterLayerModule)
 
+  const GeoRasterLayer =
+    GeoRasterLayerModule.default?.GeoRasterLayer ||
+    GeoRasterLayerModule.GeoRasterLayer ||
+    GeoRasterLayerModule.default
 
-        const georaster = await parseGeoraster(buf)
-          if (!georaster) {
-          console.error("❌ Georaster failed to parse:", url)
-        continue
-        }
+  const georaster = await parseGeoraster(buf)
 
+  layer = new GeoRasterLayer({
+    georaster,
+    opacity: 0.85,
+    resolution: 128,
+    resampleMethod: "bilinear"
+  })
+}
 
-        layer = new GeoRasterLayer({
-          georaster,
-          opacity: 0.85,
-          resolution: 128,
-          resampleMethod: "bilinear"
-        })
-      }
 
       if (layer) {
         layer.addTo(props.map)
