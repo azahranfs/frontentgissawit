@@ -3,7 +3,6 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2>Data Blok</h2>
       <div class="d-flex gap-2">
-        <!-- 🔹 Tombol Add Data Utama -->
         <button class="btn btn-success" @click="openAddManual">
           + Add Data
         </button>
@@ -18,19 +17,16 @@
       :pagination-options="{ enabled: true, perPage: 5 }"
     >
       <template #table-row="props">
-        <!-- kolom aksi -->
         <span v-if="props.column.field === 'aksi'" class="d-flex gap-2">
           <button class="btn btn-sm btn-success" @click="addFromRow(props.row)">➕ Add Record Data</button>
           <button class="btn btn-sm btn-outline-secondary" @click="editBlok(props.row)">✎ Edit</button>
           <button class="btn btn-sm btn-danger" @click="deleteBlok(props.row)">🗑 Hapus</button>
         </span>
 
-        <!-- tampilkan potongan lokasi WKB -->
         <span v-else-if="props.column.field === 'lokasi'">
           {{ props.row.lokasi ? props.row.lokasi.substring(0, 20) + '...' : '-' }}
         </span>
 
-        <!-- tampilkan list pekerja -->
         <span v-else-if="props.column.field === 'pekerja'">
           <ul class="mb-0 ps-3">
             <li v-for="p in props.row.pekerja" :key="p.id_pekerja">
@@ -39,36 +35,38 @@
           </ul>
         </span>
 
-        <!-- format tanggal -->
         <span v-else-if="props.column.field === 'waktu_tanam' || props.column.field === 'waktu_panen' || props.column.field === 'created_at'">
           {{ formatTanggal(props.row[props.column.field]) }}
         </span>
 
-        <!-- default -->
         <span v-else>
           {{ props.formattedRow[props.column.field] }}
         </span>
       </template>
     </vue-good-table>
 
-    <!-- MODAL TAMBAH -->
+    <!-- ✅ MODAL ADD -->
     <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <form @submit.prevent="submitForm">
             <div class="modal-header">
-              <h5 class="modal-title">Tambah Data Blok</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              <h5 class="modal-title">
+                {{ isAddFromRow ? "Tambah Data (Dari Record Lama)" : "Tambah Data Blok" }}
+              </h5>
+
+              <button type="button" class="btn-close" data-bs-dismiss="modal" @click="onCancelAdd"></button>
             </div>
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label">Kode Unik</label>
-                <input v-model="form.kode_unik" type="text" class="form-control"/>
+
+                <input v-model="form.kode_unik" type="text" class="form-control" :readonly="isAddFromRow"/>
               </div>
 
               <div class="mb-3">
                 <label class="form-label">Lokasi (WKB)</label>
-                <textarea v-model="form.lokasi" class="form-control" rows="3"></textarea>
+                <textarea v-model="form.lokasi" class="form-control" rows="3" :readonly="isAddFromRow"></textarea>
               </div>
 
               <div class="row">
@@ -102,7 +100,7 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+              <button class="btn btn-secondary" data-bs-dismiss="modal" @click="onCancelAdd">Batal</button>
               <button type="submit" class="btn btn-primary">Simpan</button>
             </div>
           </form>
@@ -110,7 +108,8 @@
       </div>
     </div>
 
-    <!-- MODAL EDIT -->
+
+    <!-- MODAL EDIT (NO CHANGE) -->
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -188,6 +187,8 @@ export default {
     return {
       blokList: [],
       pekerjaList: [],
+      isAddFromRow: false,      
+
       columns: [
         { label: 'ID', field: 'id_blok', type: 'number', sortable: true },
         { label: 'Kode Unik', field: 'kode_unik' },
@@ -199,6 +200,7 @@ export default {
         { label: 'Tanggal Buat', field: 'created_at' },
         { label: 'Aksi', field: 'aksi' }
       ],
+
       form: {
         kode_unik: '',
         lokasi: '',
@@ -244,13 +246,16 @@ export default {
         console.error('Gagal ambil data pekerja:', err)
       }
     },
-    // 🔹 tombol Add Data manual
+
     openAddManual() {
+      this.isAddFromRow = false       
       this.resetForm()
       this.showModal('addModal')
     },
-    // 🔹 add dari baris (lokasi sudah ada)
+
     addFromRow(row) {
+      this.isAddFromRow = true      
+
       this.form = {
         kode_unik: row.kode_unik,
         lokasi: row.lokasi,
@@ -261,6 +266,12 @@ export default {
       }
       this.showModal('addModal')
     },
+
+    onCancelAdd() {
+      this.isAddFromRow = false      
+      this.resetForm()
+    },
+
     async submitForm() {
       try {
         const payload = {
@@ -268,8 +279,10 @@ export default {
           id_pekerja: this.form.pekerja.map(p => p.id_pekerja)
         }
         await axios.post('/blok', payload)
+
         this.fetchBlok()
         this.resetForm()
+        this.isAddFromRow = false   
         this.hideModal('addModal')
         alert('Data berhasil ditambahkan')
       } catch (err) {
@@ -277,10 +290,12 @@ export default {
         alert('Gagal menambahkan data')
       }
     },
+
     editBlok(row) {
       this.editForm = { ...row, pekerja: row.pekerja || [] }
       this.showModal('editModal')
     },
+
     async submitEdit() {
       try {
         const payload = {
@@ -290,6 +305,7 @@ export default {
           id_pekerja: this.editForm.pekerja.map(p => p.id_pekerja)
         }
         await axios.put(`/blok/${this.editForm.id_blok}`, payload)
+
         this.fetchBlok()
         this.hideModal('editModal')
         alert('Data berhasil diperbarui')
@@ -298,9 +314,11 @@ export default {
         alert('Gagal memperbarui data')
       }
     },
+
     resetForm() {
       this.form = { kode_unik: '', lokasi: '', nama_blok: '', waktu_tanam: '', waktu_panen: '', pekerja: [] }
     },
+
     showModal(id) {
       const modalEl = document.getElementById(id)
       let modal = window.bootstrap.Modal.getInstance(modalEl)
@@ -313,6 +331,7 @@ export default {
       if (!modal) modal = new window.bootstrap.Modal(modalEl)
       modal.hide()
     },
+
     async deleteBlok(row) {
       if (!confirm(`Yakin hapus data blok dengan kode ${row.kode_unik}?`)) return
       try {
@@ -324,6 +343,7 @@ export default {
         alert('Gagal menghapus data')
       }
     },
+
     exportCSV() {
       let csv = 'ID,Kode Unik,Nama Blok,Waktu Tanam,Waktu Panen,Lokasi,Pekerja,Tanggal Buat\n'
       this.blokList.forEach(item => {

@@ -7,104 +7,105 @@ import { onMounted, watch, ref } from "vue"
 import L from "leaflet"
 import axios from "@/axios"
 
+import proj4 from "proj4"
+import "proj4leaflet"
+window.proj4 = proj4
+
 const props = defineProps({
   map: { type: Object, required: true },
   layerControl: { type: Object, required: true },
   date: { type: String, required: true }
 })
 
-let currentLayers = [] // simpan semua layer aktif
+let currentLayers = []
 const petaList = ref([])
 
 const fetchPeta = async (tanggal) => {
+  console.log("▶ fetchPeta RUN", tanggal)
+
   try {
-    console.log("🔎 Fetch peta untuk tanggal:", tanggal)
+    const res = await axios.get(`/upload_peta/by-date?tanggal=${tanggal}`, {
+      headers: { "Cache-Control": "no-cache" }
+    })
 
-    const res = await axios.get(`/upload_peta/by-date?tanggal=${tanggal}`)
     petaList.value = res.data
-    console.log("✅ Data dari API:", petaList.value)
+    console.log("✅ API result:", petaList.value)
 
-    // hapus semua layer lama
-    if (currentLayers.length > 0 && props.map) {
-      currentLayers.forEach(layer => {
-        props.map.removeLayer(layer)
-        props.layerControl.removeLayer(layer)
-      })
-      currentLayers = []
-    }
+    // 🧹 Hapus layer lama dari map dan control
+    currentLayers.forEach(layer => {
+      props.map.removeLayer(layer)
+      props.layerControl.removeLayer(layer)
+    })
+    currentLayers = []
 
-    if (!petaList.value || petaList.value.length === 0) {
-      console.warn("⚠ Tidak ada peta di tanggal ini")
+    if (!petaList.value?.length) {
+      console.warn("⚠ No layer found for date:", tanggal)
       return
     }
 
     for (const peta of petaList.value) {
+<<<<<<< HEAD
       let url = peta.link_peta
       if (url) {
         url = url.replace("/storage/peta/", "/peta/")
       }
 
+=======
+      const url = peta.link_peta
+>>>>>>> e6c034a9b45df06df6d0cb36f4e7ac933394400f
       const format = peta.format_file?.toLowerCase()
+      console.log("🔗 URL to fetch:", url)
 
       if (!url) {
-        console.error("❌ Tidak ada link_peta di respons untuk:", peta)
+        console.error("❌ link_peta missing:", peta)
         continue
       }
 
-      console.log("🔗 link_peta:", url, "📂 Format:", format)
+      const result = await fetch(url, { cache: "no-store" })
+      console.log("📥 fetch result:", result)
+
+      if (!result.ok) {
+        console.error("❌ TIFF failed to load:", result.status)
+        continue
+      }
 
       let layer = null
 
       if (format === "tif" || format === "tiff") {
-        // ✅ Load sebagai ArrayBuffer supaya TIDAK ada HEAD ke *.ovr
+        const buf = await result.arrayBuffer()
+
+
         const { default: parseGeoraster } = await import("georaster")
         const { default: GeoRasterLayer } = await import("georaster-layer-for-leaflet")
 
-        const resp = await fetch(url, { cache: "no-store" })
-        const arrayBuffer = await resp.arrayBuffer()
-        const georaster = await parseGeoraster(arrayBuffer)
+        const georaster = await parseGeoraster(buf)
 
         layer = new GeoRasterLayer({
           georaster,
           opacity: 0.85,
-          resampleMethod: "bilinear",
-          resolution: 128
+          resolution: 128,
+          resampleMethod: "bilinear"
         })
-      } else if (format === "geojson" || url.endsWith(".json")) {
-        const geoRes = await fetch(url)
-        const geojson = await geoRes.json()
-        layer = L.geoJSON(geojson, {
-          style: {
-            color: "blue",
-            weight: 2,
-            fillOpacity: 0.3
-          }
-        })
-      } else {
-        console.warn("⚠ Format file belum didukung:", format)
-        continue
       }
 
       if (layer) {
         layer.addTo(props.map)
         props.layerControl.addOverlay(layer, peta.nama_peta || "Upload Peta")
         currentLayers.push(layer)
-        console.log("🎉 Layer berhasil ditambahkan:", peta.nama_peta)
       }
     }
   } catch (err) {
-    console.error("❌ Gagal fetch peta:", err)
+    console.error("🔥 fetchPeta ERROR:", err)
   }
 }
 
 onMounted(() => {
-  if (props.date) {
-    setTimeout(() => {
-      fetchPeta(props.date)
-    }, 7000)
-  }
+  console.log("✅ Mounted, date =", props.date)
+  fetchPeta(props.date)
 })
+
 watch(() => props.date, (newDate) => {
-  if (newDate) fetchPeta(newDate)
+  console.log("🔄 props.date changed →", newDate)
+  fetchPeta(newDate)
 })
 </script>

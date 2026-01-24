@@ -8,7 +8,6 @@ const instance = axios.create({
   }
 })
 
-// Tambah interceptor supaya token dikirim otomatis di setiap request
 instance.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
   if (token) {
@@ -17,10 +16,11 @@ instance.interceptors.request.use(config => {
   return config
 })
 
-axios.interceptors.response.use(
+instance.interceptors.response.use(
   response => response,
   error => {
     if (error.response && error.response.status === 401) {
+      console.warn('Token kadaluarsa, logout otomatis.')
       localStorage.clear()
       window.location.href = '/login'
     }
