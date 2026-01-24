@@ -61,6 +61,7 @@
       <PetaLayer 
         v-if="map && layerControlRef?.leafletObject" 
         :map="map" 
+        :visible="false" 
         :layerControl="layerControlRef.leafletObject" 
         :date="selectedDate"
       />

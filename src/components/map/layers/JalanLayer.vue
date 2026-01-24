@@ -59,7 +59,7 @@ const fetchJalan = async (tanggal) => {
               id_jalan: item.id_jalan,
               kondisi: item.kondisi,
               lebar: item.lebar,
-              tanggal_upload: formatTanggal(item.upload_peta?.tanggal_upload)
+              created_at: formatTanggal(item.created_at)
             }
           }
         })
@@ -97,7 +97,7 @@ const bindEvents = () => {
         <strong>ID Jalan:</strong> ${props.id_jalan}<br/>
         <strong>Kondisi:</strong> ${props.kondisi}<br/>
         <strong>Lebar:</strong> ${props.lebar} m<br/>
-        <strong>Tanggal Upload:</strong> ${props.tanggal_upload}
+        <strong>Tanggal Upload:</strong> ${props.created_at}
       </div>
     `
 

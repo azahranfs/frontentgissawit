@@ -92,7 +92,7 @@
 .about-section {
   background-color: #fff;
   border-radius: 30px;
-  margin: 30px;
+  margin: 80px 80px 10px 80px;
   padding: 50px;
   color: #000;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
@@ -144,6 +144,30 @@
 }
 
 /* === Layer Section === */
+.layer-desc {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 64px;
+}
+
+.layer-card {
+  width: 100%;
+  max-width: 980px; 
+  background: #0b4f3a;
+  padding: 32px 36px;
+  border-radius: 20px;
+}
+
+.layer-title {
+  display: inline-block;
+  background: #0a6a4f;
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 14px;
+  font-weight: 700;
+  margin-bottom: 22px; 
+}
+
 .layer-section {
   color: #fff;
   padding: 60px 20px;
@@ -223,7 +247,7 @@
   border-radius: 30px;
   color: #033D28;
   padding: 100px;
-  margin: 30px;
+  margin: 0px 80px 30px 80px;
 }
 
 .quote-text {

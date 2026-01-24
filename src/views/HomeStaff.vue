@@ -66,42 +66,114 @@
     <!-- About Us Section -->
     <section id="about" class="about-section py-5">
       <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between gap-5">
+    
         <div class="about-text col-md-6">
           <h2 class="fw-bold mb-3">Tentang Kami</h2>
           <h5 class="mb-3">Selamat Datang di Website Kebun Sawit Lampung!</h5>
+
+          <!-- Deskripsi singkat -->
           <p>
-            Perkebunan kelapa sawit merupakan salah satu industri yang memberikan kontribusi signifikan terhadap perekonomian di Indonesia...
+            Perkebunan kelapa sawit merupakan salah satu industri yang memberikan kontribusi signifikan terhadap perekonomian di Indonesia
+            <span v-if="!showMore">...</span>
           </p>
-          <a href="#" class="btn btn-readmore mt-3">Read more →</a>
+
+          <!-- Deskripsi lengkap -->
+          <p v-if="showMore">
+            Melalui pengelolaan yang terencana dan berkelanjutan, perkebunan kelapa sawit mampu memberikan kontribusi nyata dalam penciptaan lapangan kerja,
+            peningkatan kesejahteraan masyarakat sekitar, serta optimalisasi pemanfaatan lahan. Kegiatan operasional perkebunan meliputi
+            perencanaan penanaman, pemeliharaan tanaman, pengendalian hama dan penyakit, hingga proses panen yang dilakukan sesuai standar operasional
+            untuk menjaga kualitas dan produktivitas hasil.
+          </p>
+
+          <p v-if="showMore">
+            PT Sampoerna Agro Tbk merupakan salah satu perusahaan agribisnis nasional yang bergerak di bidang perkebunan kelapa sawit dan
+            memiliki komitmen kuat terhadap praktik pengelolaan perkebunan yang berkelanjutan. Salah satu area operasional perusahaan berada
+            di wilayah Mesuji, Provinsi Lampung, yang dikelola dengan menerapkan prinsip efisiensi, keselamatan kerja, serta kepedulian terhadap
+            lingkungan dan masyarakat sekitar.
+          </p>
+
+          <p v-if="showMore">
+            Dalam menjalankan aktivitasnya, PT Sampoerna Agro terus berupaya meningkatkan produktivitas kebun melalui penerapan teknologi,
+            inovasi agronomi, serta pengelolaan sumber daya manusia yang profesional. Pendekatan ini diharapkan mampu menjaga keseimbangan
+            antara kinerja operasional, keberlanjutan lingkungan, dan tanggung jawab sosial perusahaan.
+          </p>
+
+          <!-- Button -->
+          <button class="btn btn-readmore mt-3" @click="toggleReadMore">
+          {{ showMore ? 'Read less ←' : 'Read more →' }}
+          </button>
         </div>
-        <div class="about-img col-md-5">
-          <img src="@/assets/image/about.png" alt="Petani Sawit" class="img-fluid rounded-4 shadow" />
+
+        <div class="about-img col-md-5 d-flex flex-column gap-3">
+  
+          <!-- Gambar utama -->
+          <img
+            src="@/assets/image/about.png"
+            alt="Perkebunan Sawit"
+            class="img-fluid rounded-4 shadow"
+          />
+
+          <!-- Gambar tambahan (muncul saat Read More) -->
+          <img
+            v-if="showMore"
+            :src="aboutImage2"
+            alt="Aktivitas Perkebunan Sawit"
+            class="img-fluid rounded-4 shadow"
+          />
+
         </div>
       </div>
     </section>
 
     <!-- Layer Section -->
-    <section id="layer" class="layer-section">
-      <div class="container">
-        <div class="layer-content">
-          <div class="map-box">
-            <img src="@/assets/image/peta.png" alt="Peta Kebun Sawit" />
-            <a href="#" class="map-button" @click.prevent="goToPeta">Lihat Peta ⤵</a>
+      <section id="layer" class="layer-section">
+        <div class="container">
+
+          <!-- Deskripsi Layer -->
+          <div class="layer-desc mb-5">
+            <div class="layer-card">
+              <h2 class="layer-title">Peta Kebun Sawit</h2>
+
+              <p>
+                Website ini menyediakan peta interaktif kebun sawit PT Sampoerna Agro di wilayah Mesuji
+                yang digunakan untuk menampilkan informasi spasial kebun secara visual dan terstruktur.
+                Melalui peta ini, pengguna dapat memahami kondisi kebun secara menyeluruh berdasarkan data lapangan.
+              </p>
+
+              <p>
+                Untuk menggunakan peta, pengguna dapat memilih layer yang tersedia sesuai kebutuhan,
+                kemudian memperbesar atau memperkecil tampilan peta untuk melihat detail area tertentu.
+                Selain itu, pengguna dapat memilih tanggal untuk melihat data sesuai dengan tanggal yang diinginkan.
+                Peta kebun ini menyediakan 8 layer dan setiap layernya akan menyajikan informasi yang berbeda.
+              </p>
+            </div>
           </div>
-          <div class="layer-list">
-            <h2>Layer</h2>
-            <ul>
-              <li><span class="checkmark">✔</span> Pohon Sawit</li>
-              <li><span class="checkmark">✔</span> Blok Kebun (Umur Pohon)</li>
-              <li><span class="checkmark">✔</span> Zona (Jumlah Pohon)</li>
-              <li><span class="checkmark">✔</span> Irigasi</li>
-              <li><span class="checkmark">✔</span> Jalur Transportasi</li>
-              <li><span class="checkmark">✔</span> Pekerja</li>
-            </ul>
+
+          <!-- Konten Utama -->
+          <div class="layer-content">
+            <div class="map-box">
+              <img src="@/assets/image/peta.png" alt="Peta Kebun Sawit" />
+              <a href="#" class="map-button" @click.prevent="goToPeta">Lihat Peta ⤵</a>
+            </div>
+
+            <div class="layer-list">
+              <h2>Layer</h2>
+             <ul>
+                <li><span class="checkmark">✔</span> Pohon Sawit</li>
+                <li><span class="checkmark">✔</span> Blok Kebun (Produktivitas Pohon)</li>
+                <li><span class="checkmark">✔</span> Zona (Kepadatan Pohon)</li>
+                <li><span class="checkmark">✔</span> Batas Kebun (Luas Kebun)</li>
+                <li><span class="checkmark">✔</span> Irigasi</li>
+                <li><span class="checkmark">✔</span> Jalur Transportasi</li>
+                <li><span class="checkmark">✔</span> Pekerja</li>
+                <li><span class="checkmark">✔</span> Citra Drone (Peta Dasar Grafik Tinggi)</li>
+              </ul>
+            </div>
           </div>
+
         </div>
-      </div>
     </section>
+
     
     <!-- Article Section --> <section class="article-section"> <div class="quote-section"> <div class="quote-text"> “Our commitment to green energy is paving the way for a cleaner, healthier planet.” </div> <a href="#" class="cta-button">Get in touch</a> </div> </section>
     <!-- 🌿 Contact Section -->
@@ -139,13 +211,16 @@
 import sawit1 from '@/assets/image/sawit1.png'
 import sawit2 from '@/assets/image/sawit2.jpg'
 import sawit3 from '@/assets/image/sawit3.jpg'
+import about2 from '@/assets/image/about2.png'
 import axios from '@/axios'
 
 export default {
   name: 'HomeStaff',
   data() {
     return {
-      slides: [sawit1, sawit2, sawit3]
+      slides: [sawit1, sawit2, sawit3],
+      showMore: false,
+      aboutImage2: about2
     }
   },
   methods: {
@@ -170,6 +245,9 @@ export default {
       } else if (sectionId === 'home') {
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
+    },
+    toggleReadMore() {
+      this.showMore = !this.showMore
     }
   }
 }

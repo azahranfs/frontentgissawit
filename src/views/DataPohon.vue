@@ -10,6 +10,15 @@
       </div>
     </div>
 
+    <!-- FILTER ZONA -->
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Filter Zona</label>
+      <select v-model="selectedZona" class="form-select w-auto">
+        <option value="Semua">Semua Zona</option>
+        <option v-for="n in 7" :key="n" :value="`Zona ${n}`">Zona {{ n }}</option>
+      </select>
+    </div>
+
     <vue-good-table
       :columns="columns"
       :rows="pohonList"
@@ -109,6 +118,7 @@ export default {
   components: { VueGoodTable },
   data() {
     return {
+      selectedZona: 'Semua', // TAMBAHAN
       pohonList: [],
       columns: [
         { label: 'ID Pohon', field: 'id_pohon', type: 'number', sortable: true },
@@ -133,18 +143,33 @@ export default {
       }
     }
   },
+
+  watch: {
+    selectedZona() {
+      this.fetchPohon()
+    }
+  },
+
   mounted() {
     this.fetchPohon()
   },
+
   methods: {
     async fetchPohon() {
       try {
-        const res = await axios.get('/pohon')
+        let url = '/pohon'
+
+        if (this.selectedZona !== 'Semua') {
+          url = `/pohon?zona=${encodeURIComponent(this.selectedZona)}`
+        }
+
+        const res = await axios.get(url)
         this.pohonList = res.data
       } catch (err) {
         console.error('Gagal ambil data pohon:', err)
       }
     },
+
     async submitForm() {
       try {
         const payload = { ...this.form }
@@ -158,6 +183,7 @@ export default {
         alert('Gagal menambahkan data')
       }
     },
+
     editPohon(row) {
       this.editForm = {
         id_pohon: row.id_pohon,
@@ -168,6 +194,7 @@ export default {
       }
       this.showModal('editModal')
     },
+
     async submitEdit() {
       try {
         await axios.put(`/pohon/${this.editForm.id_pohon}`, this.editForm)
@@ -176,54 +203,7 @@ export default {
         alert('Data berhasil diperbarui')
       } catch (err) {
         console.error('Gagal update data pohon:', err)
-        alert('Gagal memperbarui data')
       }
-    },
-    async deletePohon(row) {
-      if (confirm(`Yakin ingin menghapus pohon ID ${row.id_pohon}?`)) {
-        try {
-          await axios.delete(`/pohon/${row.id_pohon}`)
-          this.fetchPohon()
-          alert('Data berhasil dihapus')
-        } catch (err) {
-          console.error('Gagal hapus data pohon:', err)
-          alert('Gagal menghapus data')
-        }
-      }
-    },
-    resetForm() {
-      this.form = {
-        longitude: null,
-        latitude: null,
-        varietas: '',
-        zona: ''
-      }
-    },
-    showModal(id) {
-      const modalEl = document.getElementById(id)
-      let modal = window.bootstrap.Modal.getInstance(modalEl)
-      if (!modal) modal = new window.bootstrap.Modal(modalEl)
-      modal.show()
-    },
-    hideModal(id) {
-      const modalEl = document.getElementById(id)
-      let modal = window.bootstrap.Modal.getInstance(modalEl)
-      if (!modal) modal = new window.bootstrap.Modal(modalEl)
-      modal.hide()
-    },
-    exportCSV() {
-      let csv = 'ID Pohon,Longitude,Latitude,Varietas,Zona\n'
-      this.pohonList.forEach(item => {
-        csv += `${item.id_pohon},${item.longitude},${item.latitude},"${item.varietas ?? ''}","${item.zona ?? ''}"\n`
-      })
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', 'data_pohon.csv')
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
     }
   }
 }

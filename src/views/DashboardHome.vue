@@ -11,7 +11,7 @@
       <div class="col-md-4">
         <div class="stat-box bg-primary text-white">
           <h4>Luas Lahan</h4>
-          <p>{{ luasLahan.toLocaleString('id-ID') }} m2</p>
+          <p>{{ luasLahan }} m2</p>
         </div>
       </div>
       <div class="col-md-4">
@@ -37,7 +37,7 @@
 </template>
 
 <script>
-import axios from'@/axios'
+import axios from '@/axios'
 
 export default {
   data() {
@@ -47,21 +47,16 @@ export default {
       jumlahPekerja: 0,
     };
   },
+
   async mounted() {
     try {
-      // Ambil data pohon
-      const pohonRes = await axios.get("http://localhost:8000/api/pohon");
-      this.jumlahPohon = pohonRes.data.length;
-
-      // Ambil data lahan dan jumlahkan luas
-      const lahanRes = await axios.get("http://localhost:8000/api/lahan");
-      this.luasLahan = lahanRes.data.reduce((total, item) => {
-        return total + (parseFloat(item.luas) || 0);
-      }, 0);
-
-      // Ambil data pekerja
-      const pekerjaRes = await axios.get("http://localhost:8000/api/pekerja");
+      const pohonCountRes = await axios.get('/pohon/count');
+      this.jumlahPohon = pohonCountRes.data?.total_pohon ?? 0;
+      const lahanRes = await axios.get('/lahan');
+      this.luasLahan = lahanRes.data[0]?.luas || 0;
+      const pekerjaRes = await axios.get('/pekerja');
       this.jumlahPekerja = pekerjaRes.data.length;
+
     } catch (error) {
       console.error("Gagal memuat data dashboard:", error);
     }

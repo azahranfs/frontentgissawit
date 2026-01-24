@@ -22,7 +22,7 @@
     "leaflet.control.layers.tree": "^1.1.1",
     "pinia": "^3.0.3",
     "plotty": "^0.4.9",
-    "proj4": "^2.19.7",
+    "proj4": "^2.19.10",
     "proj4leaflet": "^1.0.2",
     "simple-datatables": "^10.0.0",
     "terraformer-wkt-parser": "^1.2.1",

@@ -165,13 +165,19 @@ export default {
   },
   methods: {
     async fetchPeta() {
-      try {
-        const response = await axios.get('/upload_peta')
-        this.petaList = response.data
-      } catch (error) {
-        console.error('Gagal ambil data peta:', error)
+  try {
+    const response = await axios.get('/upload_peta')
+    this.petaList = response.data.map(item => {
+      const filename = item.link_peta.split('/').pop()
+      return {
+        ...item,
+        link_peta: `https://kebunsawit.my.id/peta/${filename}`
       }
-    },
+    })
+  } catch (error) {
+    console.error('Gagal ambil data peta:', error)
+  }
+  },
     handleFileUpload(event) {
       this.form.file = event.target.files[0]
     },
